@@ -36,9 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles', 
-    'users',
-
+    'django.contrib.staticfiles',
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -51,7 +50,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'Forin_Cars.urls'
+ROOT_URLCONF = 'forin_cars.urls'
+WSGI_APPLICATION = 'forin_cars.wsgi.application'
+ASGI_APPLICATION = 'forin_cars.asgi.application'
+
 
 TEMPLATES = [
     {
@@ -67,8 +69,6 @@ TEMPLATES = [
         },
     },
 ]
-
-WSGI_APPLICATION = 'Forin_Cars.wsgi.application'
 
 
 # Database

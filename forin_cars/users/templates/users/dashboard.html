@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+</head>
+<body>
+
+    <header>
+        <h1>Dashboard</h1>
+        <p>Bienvenido, {{ request.user.first_name|default:request.user.username }}</p>
+    </header>
+
+    <hr>
+
+    <section>
+        <h2>¿Qué podés hacer desde acá?</h2>
+
+        <ul>
+            <li>Gestionar ingresos y egresos de vehículos</li>
+            <li>Ver disponibilidad de espacios</li>
+            <li>Consultar movimientos y métricas</li>
+            <li>Administrar tu cochera</li>
+        </ul>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Acciones rápidas</h2>
+
+        <ul>
+            <li><a href="#">➕ Ingresar vehículo</a></li>
+            <li><a href="#">🚗 Ver vehículos en cochera</a></li>
+            <li><a href="#">📊 Reportes</a></li>
+        </ul>
+    </section>
+
+    <hr>
+
+    <footer>
+        <a href="{% url 'logout' %}">Cerrar sesión</a>
+    </footer>
+
+</body>
+</html>
