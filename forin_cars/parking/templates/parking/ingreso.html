@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Ingreso{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>Ingreso</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label">Tipo de vehículo *</label>
+      <select name="tipo_id" class="form-select" required>
+        <option value="">-- Seleccionar --</option>
+        {% for t in tipos %}
+          <option value="{{ t.id }}">{{ t.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Ticket / Alias (obligatorio)</label>
+      <input name="ticket" class="form-control" placeholder="Ej: TKT-104 o ROJO" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Patente (últimos 3) (opcional)</label>
+      <input name="patente_ult3" class="form-control" placeholder="Ej: ABC" maxlength="3">
+      <div class="form-text">Si cargás algo, deben ser exactamente 3 caracteres.</div>
+    </div>
+
+    <hr>
+
+    <h5>Datos del cliente (opcionales)</h5>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <input name="nombre" class="form-control" placeholder="Nombre">
+      </div>
+      <div class="col-md-6">
+        <input name="apellido" class="form-control" placeholder="Apellido">
+      </div>
+      <div class="col-md-6">
+        <input name="telefono" class="form-control" placeholder="Teléfono">
+      </div>
+      <div class="col-md-6">
+        <input name="email" class="form-control" placeholder="Email">
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Ingresar</button>
+      <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Volver</a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

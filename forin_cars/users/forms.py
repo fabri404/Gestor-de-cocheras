@@ -1,16 +1,23 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-class UserRegisterForm(forms.ModelForm):
-    password1 = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
-    password2 = forms.CharField(widget=forms.PasswordInput, label="Confirmar contraseña")
+class RegistroForm(UserCreationForm):
+    email = forms.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ["username", "email", "first_name", "last_name"]
+        fields = ("username", "email", "password1", "password2")
 
-    def clean(self):
-        cleaned_data = super().clean()
-        if cleaned_data.get("password1") != cleaned_data.get("password2"):
-            raise forms.ValidationError("Las contraseñas no coinciden")
-        return cleaned_data
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Ese email ya está registrado.")
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+        return user

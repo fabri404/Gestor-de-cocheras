@@ -1,46 +1,102 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard</title>
-</head>
-<body>
+{# users/templates/users/dashboard.html #}
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
 
-    <header>
-        <h1>Dashboard</h1>
-        <p>Bienvenido, {{ request.user.first_name|default:request.user.username }}</p>
-    </header>
+{% block content %}
+<div class="container">
 
-    <hr>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="m-0">Dashboard</h2>
+    <a class="btn btn-primary" href="{% url 'cochera_new' %}">+ Crear cochera</a>
+  </div>
 
-    <section>
-        <h2>¿Qué podés hacer desde acá?</h2>
+  <h4 class="mb-3">Mis cocheras</h4>
 
-        <ul>
-            <li>Gestionar ingresos y egresos de vehículos</li>
-            <li>Ver disponibilidad de espacios</li>
-            <li>Consultar movimientos y métricas</li>
-            <li>Administrar tu cochera</li>
-        </ul>
-    </section>
+  {% if cocheras %}
+    <div class="row g-3">
+      {% for c in cocheras %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title mb-1">{{ c.nombre }}</h5>
+              <div class="text-muted small mb-2">
+                {{ c.direccion|default:"(sin dirección)" }}
+              </div>
 
-    <hr>
+              <div class="mb-2">
+                <span class="badge text-bg-{% if c.estado == 'ACTIVA' %}success{% else %}secondary{% endif %}">
+                  {{ c.estado }}
+                </span>
+              </div>
 
-    <section>
-        <h2>Acciones rápidas</h2>
+              {# Si querés agregar más detalles sin romper: #}
+              {# <div class="small">ID: {{ c.id }}</div> #}
+            </div>
 
-        <ul>
-            <li><a href="#">➕ Ingresar vehículo</a></li>
-            <li><a href="#">🚗 Ver vehículos en cochera</a></li>
-            <li><a href="#">📊 Reportes</a></li>
-        </ul>
-    </section>
+            <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'cochera_detail' c.id %}">Gestionar</a>
+              <a class="btn btn-warning btn-sm" href="{% url 'cochera_edit' c.id %}">Editar</a>
 
-    <hr>
+              {# Estos 2 suelen requerir cochera_id #}
+              <a class="btn btn-success btn-sm" href="{% url 'ingreso' c.id %}">Ingreso</a>
+              <a class="btn btn-danger btn-sm" href="{% url 'egreso' c.id %}">Egreso</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
 
-    <footer>
-        <a href="{% url 'logout' %}">Cerrar sesión</a>
-    </footer>
+  {% else %}
+    <div class="alert alert-warning">
+      No tenés cocheras creadas todavía. Creá una para empezar.
+    </div>
+    <a class="btn btn-primary" href="{% url 'cochera_new' %}">Crear cochera</a>
+  {% endif %}
 
-</body>
-</html>
+  <hr class="my-4">
+
+  {# ==========================
+     MÉTRICAS (NO SE BORRAN)
+     ========================== #}
+  <h4 class="mb-3">Métricas</h4>
+
+  {# Si vos calculás métricas por cochera seleccionada y pasás 'cochera' en ctx, se muestra #}
+  {% if cochera %}
+    <div class="text-muted mb-2">
+      Métricas calculadas sobre: <b>{{ cochera.nombre }}</b>
+    </div>
+  {% else %}
+    <div class="text-muted mb-2">
+      Métricas generales (si no hay cochera “seleccionada” en el contexto).
+    </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-3">
+      <div class="card p-3">
+        <div>Total espacios</div>
+        <div class="fs-3">{{ total_espacios|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card p-3">
+        <div>Ocupados</div>
+        <div class="fs-3">{{ ocupados|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card p-3">
+        <div>Libres</div>
+        <div class="fs-3">{{ libres|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card p-3">
+        <div>Mov. abiertos</div>
+        <div class="fs-3">{{ mov_abiertos|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
