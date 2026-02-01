@@ -1,51 +1,81 @@
-{# users/templates/users/login.html #}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Login</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
 
-  <h2>Iniciar sesión</h2>
+{% block title %}Login{% endblock %}
 
-  {% if messages %}
-    <ul>
-      {% for message in messages %}
-        <li style="color: red;">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+      <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body p-4 p-sm-5">
 
-  <form method="post">
-    {% csrf_token %}
+          <h2 class="text-center mb-4 fw-bold text-body">Iniciar sesión</h2>
 
-    {# Soporta ?next=/ruta/ (opcional) #}
-    {% if request.GET.next %}
-      <input type="hidden" name="next" value="{{ request.GET.next }}">
-    {% endif %}
+          <form method="post" novalidate>
+            {% csrf_token %}
 
-    <div>
-      <label for="username">Usuario</label><br>
-      <input type="text" name="username" id="username" required>
+            {# Si venís de un link protegido, preserva next #}
+            {% if request.GET.next %}
+              <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors|striptags }}
+              </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="{{ form.username.id_for_label }}" class="form-label">Usuario</label>
+              <input
+                type="text"
+                name="{{ form.username.html_name }}"
+                id="{{ form.username.id_for_label }}"
+                class="form-control"
+                value="{{ form.username.value|default_if_none:'' }}"
+              >
+              {% if form.username.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.username.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  name="{{ form.password.html_name }}"
+                  id="{{ form.password.id_for_label }}"
+                  class="form-control"
+                >
+                <span class="input-group-text" style="cursor:pointer;"
+                      onclick="togglePassword('{{ form.password.id_for_label }}')">
+                  <i class="fa fa-eye" id="icon-{{ form.password.id_for_label }}"></i>
+                </span>
+              </div>
+              {% if form.password.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ form.password.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="d-grid mt-3">
+              <button type="submit" class="btn btn-primary btn-lg">Ingresar</button>
+            </div>
+          </form>
+
+          <p class="text-center mt-4 text-body">
+            ¿No tienes cuenta?
+            <a href="{% url 'registro' %}" class="link-info fw-semibold">Regístrate</a>
+          </p>
+
+        </div>
+      </div>
     </div>
-
-    <br>
-
-    <div>
-      <label for="password">Contraseña</label><br>
-      <input type="password" name="password" id="password" required>
-    </div>
-
-    <br>
-
-    <button type="submit">Ingresar</button>
-  </form>
-
-  <p>
-    ¿No tenés cuenta?
-    <a href="{% url 'registro' %}">Registrarse</a>
-  </p>
-
-</body>
-</html>
+  </div>
+</div>
+{% endblock %}

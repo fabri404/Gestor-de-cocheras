@@ -8,11 +8,32 @@ class Cochera(models.Model):
     nombre = models.CharField(max_length=120)
     direccion = models.CharField(max_length=200, blank=True)
     activa = models.BooleanField(default=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ✅ empleados asignados a esta cochera (opcional)
+    empleados = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="cocheras_asignadas",
+        blank=True,
+        through="CocheraEmpleado",
+    )
 
     def __str__(self):
         return f"{self.nombre} ({self.owner.username})"
+    
+class CocheraEmpleado(models.Model):
+    cochera = models.ForeignKey(Cochera, on_delete=models.CASCADE)
+    empleado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    activo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["cochera", "empleado"], name="uq_cochera_empleado")
+        ]
+
+    def __str__(self):
+        return f"{self.cochera.nombre} -> {self.empleado.username}"
 
 
 class TipoEspacio(models.Model):
