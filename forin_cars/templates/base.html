@@ -33,9 +33,11 @@
             <a class="nav-link" href="{% url 'cochera_new' %}">+ Crear cochera</a>
           </li>
 
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/">Admin</a>
-          </li>
+          {% if request.user.is_staff or request.user.is_superuser %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
+            </li>
+          {% endif %}
 
           {# Si todavía no tenés url 'logout', comentá esta línea o agregala en users/urls.py #}
           <li class="nav-item">

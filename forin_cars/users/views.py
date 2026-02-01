@@ -8,18 +8,33 @@ from .forms import RegistroForm
 from parking.models import Cochera, Movimiento
 
 
+# users/views.py
+from django.contrib import messages
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
+from django.urls import reverse
+
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
-
-    form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST":
-        if form.is_valid():
-            login(request, form.get_user())
-            return redirect("dashboard")
-        messages.error(request, "Usuario o contraseña incorrectos.")
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
 
-    return render(request, "users/login.html", {"form": form})
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            messages.error(request, "Credenciales inválidas.")
+            return render(request, "users/login.html")
+
+        login(request, user)
+
+        # Si es super admin => entra al admin sin reloguearse
+        if user.is_superuser or user.is_staff:
+            return redirect(reverse("admin:index"))
+        
+        # Usuario común => a donde venía, o dashboard
+        next_url = request.POST.get("next") or request.GET.get("next")
+        return redirect(next_url or "dashboard")
+
+    return render(request, "users/login.html")
 
 
 def registro_view(request):

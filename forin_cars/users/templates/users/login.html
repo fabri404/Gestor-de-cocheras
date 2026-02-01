@@ -1,45 +1,51 @@
+{# users/templates/users/login.html #}
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
+  <meta charset="UTF-8">
+  <title>Login</title>
 </head>
 <body>
 
-    <h2>Iniciar sesión</h2>
+  <h2>Iniciar sesión</h2>
 
-    {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li style="color: red;">{{ message }}</li>
-            {% endfor %}
-        </ul>
+  {% if messages %}
+    <ul>
+      {% for message in messages %}
+        <li style="color: red;">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    {# Soporta ?next=/ruta/ (opcional) #}
+    {% if request.GET.next %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
     {% endif %}
 
-    <form method="post">
-        {% csrf_token %}
+    <div>
+      <label for="username">Usuario</label><br>
+      <input type="text" name="username" id="username" required>
+    </div>
 
-        <div>
-            <label for="username">Usuario</label><br>
-            <input type="text" name="username" id="username" required>
-        </div>
+    <br>
 
-        <br>
+    <div>
+      <label for="password">Contraseña</label><br>
+      <input type="password" name="password" id="password" required>
+    </div>
 
-        <div>
-            <label for="password">Contraseña</label><br>
-            <input type="password" name="password" id="password" required>
-        </div>
+    <br>
 
-        <br>
+    <button type="submit">Ingresar</button>
+  </form>
 
-        <button type="submit">Ingresar</button>
-    </form>
-
-    <p>
-        ¿No tenés cuenta?
-        <a href="{% url 'registro' %}">Registrarse</a>
-    </p>
+  <p>
+    ¿No tenés cuenta?
+    <a href="{% url 'registro' %}">Registrarse</a>
+  </p>
 
 </body>
 </html>
