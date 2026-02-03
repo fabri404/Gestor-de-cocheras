@@ -1,3 +1,4 @@
+{# users/templates/users/dashboard.html #}
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 
@@ -12,72 +13,130 @@
     {% endif %}
   </div>
 
-  <h4 class="mb-3">Cocheras</h4>
+  <h4 class="mb-3">Mis cocheras</h4>
 
-  {% if cocheras %}
+  {% if cocheras_data %}
     <div class="row g-3">
-      {% for c in cocheras %}
-        <div class="col-12 col-md-6 col-lg-4">
+      {% for item in cocheras_data %}
+        {% with c=item.cochera %}
+        <div class="col-12 col-lg-6">
           <div class="card h-100 shadow-sm">
             <div class="card-body">
-              <h5 class="card-title mb-1">{{ c.nombre }}</h5>
-              <div class="text-muted small mb-2">
-                {{ c.direccion|default:"(sin dirección)" }}
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <h5 class="card-title mb-1">{{ c.nombre }}</h5>
+                  <div class="text-muted small">{{ c.direccion|default:"(sin dirección)" }}</div>
+
+                  <div class="mt-2">
+                    <span class="badge text-bg-{% if c.activa %}success{% else %}secondary{% endif %}">
+                      {% if c.activa %}ACTIVA{% else %}INACTIVA{% endif %}
+                    </span>
+                    {% if item.is_owner %}
+                      <span class="badge text-bg-primary">Dueño</span>
+                    {% else %}
+                      <span class="badge text-bg-info">Empleado</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="text-end">
+                  <div class="small text-muted">Ocupación</div>
+                  <div class="fs-5 fw-semibold">{{ item.ocupados }}/{{ item.total_espacios }}</div>
+                  <div class="small text-muted">Libres: {{ item.libres }}</div>
+                </div>
               </div>
 
-              <div class="mb-2">
-                <span class="badge text-bg-{% if c.estado == 'ACTIVA' %}success{% else %}secondary{% endif %}">
-                  {{ c.estado }}
-                </span>
+              <hr class="my-3">
+
+              <div class="row g-2 mb-2">
+                <div class="col-6 col-md-3">
+                  <div class="border rounded p-2">
+                    <div class="small text-muted">Total</div>
+                    <div class="fw-semibold">{{ item.total_espacios }}</div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <div class="border rounded p-2">
+                    <div class="small text-muted">Ocupados</div>
+                    <div class="fw-semibold">{{ item.ocupados }}</div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <div class="border rounded p-2">
+                    <div class="small text-muted">Libres</div>
+                    <div class="fw-semibold">{{ item.libres }}</div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <div class="border rounded p-2">
+                    <div class="small text-muted">Mov. abiertos</div>
+                    <div class="fw-semibold">{{ item.mov_abiertos }}</div>
+                  </div>
+                </div>
               </div>
+
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th class="text-end">Total</th>
+                      <th class="text-end">Ocupados</th>
+                      <th class="text-end">Libres</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in item.por_tipo %}
+                      <tr>
+                        <td>{{ row.tipo.nombre }}</td>
+                        <td class="text-end">{{ row.total }}</td>
+                        <td class="text-end">{{ row.ocupados }}</td>
+                        <td class="text-end">{{ row.libres }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" class="text-muted">Sin capacidades configuradas.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
             </div>
 
             <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
-              <a class="btn btn-outline-primary btn-sm" href="{% url 'cochera_detail' c.id %}">Gestionar</a>
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'cochera_detail' c.id %}">Detalle</a>
+
+              {% if can_manage_cochera and item.is_owner %}
+                <a class="btn btn-warning btn-sm" href="{% url 'cochera_edit' c.id %}">Editar</a>
+              {% endif %}
 
               {% if can_operate %}
                 <a class="btn btn-success btn-sm" href="{% url 'ingreso_cochera' c.id %}">Ingreso</a>
                 <a class="btn btn-danger btn-sm" href="{% url 'egreso_cochera' c.id %}">Egreso</a>
               {% endif %}
-
-              {% if can_manage_cochera and c.owner_id == request.user.id %}
-                <a class="btn btn-warning btn-sm" href="{% url 'cochera_edit' c.id %}">Editar</a>
-              {% endif %}
             </div>
           </div>
         </div>
+        {% endwith %}
       {% endfor %}
     </div>
-
   {% else %}
+    <div class="alert alert-warning">
+      No tenés cocheras asignadas todavía.
+      {% if can_manage_cochera %}
+        Podés crear una para empezar.
+      {% endif %}
+    </div>
+
     {% if can_manage_cochera %}
-      <div class="alert alert-warning">
-        Todavía no creaste cocheras. Creá una para empezar.
-      </div>
       <a class="btn btn-primary" href="{% url 'cochera_new' %}">Crear cochera</a>
-    {% else %}
-      <div class="alert alert-secondary">
-        Tu dashboard está vacío porque todavía no tenés cocheras asignadas ni permisos de creación.
-        Cuando el desarrollador te asigne <b>ADMIN_DUENO</b> o te inviten como <b>ADMIN_EMPLEADO</b>, van a aparecer acá.
-      </div>
     {% endif %}
   {% endif %}
 
   <hr class="my-4">
 
-  <h4 class="mb-3">Métricas</h4>
+  <h4 class="mb-3">Métricas (todas las cocheras)</h4>
 
-  {% if cochera %}
-    <div class="text-muted mb-2">
-      Métricas calculadas sobre: <b>{{ cochera.nombre }}</b>
-    </div>
-  {% else %}
-    <div class="text-muted mb-2">
-      Métricas generales (sin cochera seleccionada).
-    </div>
-  {% endif %}
-
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-3">
     <div class="col-12 col-md-3">
       <div class="card p-3">
         <div>Total espacios</div>
@@ -104,33 +163,74 @@
     </div>
   </div>
 
-  {% if ultimos %}
-    <h5 class="mb-2">Últimos movimientos</h5>
-    <div class="table-responsive">
-      <table class="table table-sm table-striped align-middle">
-        <thead>
+  <div class="text-muted mb-2">Ocupación global: <b>{{ ocupacion_pct|default:0 }}%</b></div>
+
+  <h5 class="mt-4">Detalle global por tipo</h5>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th class="text-end">Total</th>
+          <th class="text-end">Ocupados</th>
+          <th class="text-end">Libres</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in totales_por_tipo %}
           <tr>
-            <th>Ingreso</th>
-            <th>Ticket</th>
-            <th>Tipo</th>
-            <th>Espacio</th>
-            <th>Estado</th>
+            <td>{{ row.tipo.nombre }}</td>
+            <td class="text-end">{{ row.total }}</td>
+            <td class="text-end">{{ row.ocupados }}</td>
+            <td class="text-end">{{ row.libres }}</td>
           </tr>
-        </thead>
-        <tbody>
-          {% for m in ultimos %}
-            <tr>
-              <td class="text-muted">{{ m.ingreso_at }}</td>
-              <td><b>{{ m.vehiculo.ticket }}</b></td>
-              <td>{{ m.vehiculo.tipo.nombre }}</td>
-              <td>{{ m.espacio.id }}</td>
-              <td>{{ m.estado }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% endif %}
+        {% empty %}
+          <tr><td colspan="4" class="text-muted">No hay datos de capacidades.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h5 class="mt-4">Últimos movimientos</h5>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Cochera</th>
+          <th>Ticket</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in ultimos %}
+          <tr>
+            <td>{{ m.ingreso_at }}</td>
+            <td>{{ m.cochera.nombre }}</td>
+            <td>{{ m.vehiculo.ticket }}</td>
+            <td>{{ m.vehiculo.tipo.nombre }}</td>
+            <td>
+              <span class="badge text-bg-{% if m.estado == 'ABIERTO' %}success{% else %}secondary{% endif %}">
+                {{ m.estado }}
+              </span>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">Sin movimientos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Placeholder monetario #}
+  <div class="mt-3 text-muted small">
+    {% if total_facturado is None %}
+      Monto total: (pendiente de implementar facturación/tarifas)
+    {% else %}
+      Monto total: {{ total_facturado }}
+    {% endif %}
+  </div>
 
 </div>
 {% endblock %}
