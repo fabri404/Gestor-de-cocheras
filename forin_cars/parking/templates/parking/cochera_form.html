@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-3">{{ title }}</h2>
+
+  <form method="post" class="card p-3 shadow-sm">
+    {% csrf_token %}
+
+    <h5 class="mb-2">Datos de la cochera</h5>
+    <div class="row g-3">
+      {% for field in cochera_form %}
+        <div class="col-12">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <hr class="my-3">
+
+    <h5 class="mb-2">Capacidades (mapa)</h5>
+    <div class="row g-3">
+      {% for field in cap_form %}
+        <div class="col-12 col-md-6">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <hr class="my-3">
+
+    <h5 class="mb-2">Precios por hora</h5>
+    <div class="row g-3">
+      {% for field in tarifa_form %}
+        <div class="col-12 col-md-6">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <hr class="my-3">
+
+    <h5 class="mb-2">Empleados</h5>
+    {% for field in empleados_form %}
+      <div class="mb-3">
+        <label class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="text-muted small">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+
+    {% if empleados_form.non_field_errors %}
+      <div class="alert alert-danger">{{ empleados_form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Guardar</button>
+      <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Volver</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

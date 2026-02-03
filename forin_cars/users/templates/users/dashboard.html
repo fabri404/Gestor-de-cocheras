@@ -1,4 +1,3 @@
-{# users/templates/users/dashboard.html #}
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 
@@ -13,7 +12,7 @@
     {% endif %}
   </div>
 
-  <h4 class="mb-3">Mis cocheras</h4>
+  <h4 class="mb-3">Cocheras</h4>
 
   {% if cocheras %}
     <div class="row g-3">
@@ -34,28 +33,33 @@
             </div>
 
             <div class="card-footer bg-transparent d-flex flex-wrap gap-2">
-
-              {% if can_manage_cochera %}
-                <a class="btn btn-outline-primary btn-sm" href="{% url 'cochera_detail' c.id %}">Gestionar</a>
-                <a class="btn btn-warning btn-sm" href="{% url 'cochera_edit' c.id %}">Editar</a>
-              {% endif %}
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'cochera_detail' c.id %}">Gestionar</a>
 
               {% if can_operate %}
                 <a class="btn btn-success btn-sm" href="{% url 'ingreso_cochera' c.id %}">Ingreso</a>
                 <a class="btn btn-danger btn-sm" href="{% url 'egreso_cochera' c.id %}">Egreso</a>
               {% endif %}
 
+              {% if can_manage_cochera and c.owner_id == request.user.id %}
+                <a class="btn btn-warning btn-sm" href="{% url 'cochera_edit' c.id %}">Editar</a>
+              {% endif %}
             </div>
           </div>
         </div>
       {% endfor %}
     </div>
+
   {% else %}
-    <div class="alert alert-warning">
-      No tenés cocheras creadas todavía.
-    </div>
     {% if can_manage_cochera %}
+      <div class="alert alert-warning">
+        Todavía no creaste cocheras. Creá una para empezar.
+      </div>
       <a class="btn btn-primary" href="{% url 'cochera_new' %}">Crear cochera</a>
+    {% else %}
+      <div class="alert alert-secondary">
+        Tu dashboard está vacío porque todavía no tenés cocheras asignadas ni permisos de creación.
+        Cuando el desarrollador te asigne <b>ADMIN_DUENO</b> o te inviten como <b>ADMIN_EMPLEADO</b>, van a aparecer acá.
+      </div>
     {% endif %}
   {% endif %}
 
@@ -66,6 +70,10 @@
   {% if cochera %}
     <div class="text-muted mb-2">
       Métricas calculadas sobre: <b>{{ cochera.nombre }}</b>
+    </div>
+  {% else %}
+    <div class="text-muted mb-2">
+      Métricas generales (sin cochera seleccionada).
     </div>
   {% endif %}
 
@@ -95,6 +103,34 @@
       </div>
     </div>
   </div>
+
+  {% if ultimos %}
+    <h5 class="mb-2">Últimos movimientos</h5>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Ingreso</th>
+            <th>Ticket</th>
+            <th>Tipo</th>
+            <th>Espacio</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in ultimos %}
+            <tr>
+              <td class="text-muted">{{ m.ingreso_at }}</td>
+              <td><b>{{ m.vehiculo.ticket }}</b></td>
+              <td>{{ m.vehiculo.tipo.nombre }}</td>
+              <td>{{ m.espacio.id }}</td>
+              <td>{{ m.estado }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
 
 </div>
 {% endblock %}
