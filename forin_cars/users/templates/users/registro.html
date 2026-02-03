@@ -1,119 +1,65 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Registro</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Registro{% endblock %}
 
-<h2>Crear cuenta</h2>
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-5">
 
-{% if form.errors %}
-    <ul>
-        {% for field in form %}
-            {% for error in field.errors %}
-                <li style="color:red">{{ error }}</li>
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h3 class="mb-2">Crear cuenta</h3>
+          <p class="text-muted mb-4">Completá tus datos para registrarte.</p>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            {% for field in form %}
+              <div class="mb-3">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+                {% if field.field.widget.input_type == "checkbox" %}
+                  <div class="form-check">
+                    {{ field }}
+                    <label class="form-check-label" for="{{ field.id_for_label }}">
+                      {{ field.label }}
+                    </label>
+                  </div>
+                {% else %}
+                  {{ field }}
+                {% endif %}
+
+                {% if field.help_text %}
+                  <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+
+                {% if field.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ field.errors }}
+                  </div>
+                {% endif %}
+              </div>
             {% endfor %}
-        {% endfor %}
-        {% for error in form.non_field_errors %}
-            <li style="color:red">{{ error }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
 
-<form method="post" novalidate>
-    {% csrf_token %}
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Registrarme</button>
+              <a href="{% url 'login' %}" class="btn btn-outline-secondary">Ya tengo cuenta</a>
+            </div>
+          </form>
+        </div>
+      </div>
 
-    <div>
-        <label for="username">Usuario</label><br>
-        <input
-            type="text"
-            id="username"
-            name="username"
-            required
-            minlength="4"
-            placeholder="Nombre de usuario"
-            value="{{ request.POST.username|default:'' }}"
-        >
+      <div class="text-center small text-muted mt-3">
+        Al registrarte, vas a ver un dashboard vacío hasta que te asignen permisos o una cochera.
+      </div>
+
     </div>
-
-    <br>
-
-    <div>
-        <label for="email">Email</label><br>
-        <input
-            type="email"
-            id="email"
-            name="email"
-            required
-            placeholder="correo@ejemplo.com"
-            value="{{ request.POST.email|default:'' }}"
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="first_name">Nombre</label><br>
-        <input
-            type="text"
-            id="first_name"
-            name="first_name"
-            required
-            minlength="2"
-            value="{{ request.POST.first_name|default:'' }}"
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="last_name">Apellido</label><br>
-        <input
-            type="text"
-            id="last_name"
-            name="last_name"
-            required
-            minlength="2"
-            value="{{ request.POST.last_name|default:'' }}"
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="password1">Contraseña</label><br>
-        <input
-            type="password"
-            id="password1"
-            name="password1"
-            required
-            minlength="6"
-        >
-    </div>
-
-    <br>
-
-    <div>
-        <label for="password2">Confirmar contraseña</label><br>
-        <input
-            type="password"
-            id="password2"
-            name="password2"
-            required
-            minlength="6"
-        >
-    </div>
-
-    <br>
-
-    <button type="submit">Registrarse</button>
-</form>
-
-<p>
-    ¿Ya tenés cuenta?
-    <a href="{% url 'login' %}">Iniciar sesión</a>
-</p>
-
-</body>
-</html>
+  </div>
+</div>
+{% endblock %}
