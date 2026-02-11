@@ -1,8 +1,8 @@
 from io import BytesIO
+import secrets
 from urllib.parse import urlencode
 import base64
 import qrcode
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import FieldError
@@ -168,25 +168,68 @@ def cochera_qr_png_view(request, cochera_id: int):
     return _qr_png_response(_public_ingreso_url(request, cochera.id, token))
 
 
+def _gen_ticket_publico() -> str:
+    # <= 20 chars (tu modelo limita ticket a 20)
+    return "QR-" + secrets.token_hex(4).upper()  # ej: QR-1A2B3C4D
+
 def ingreso_public_view(request, cochera_id: int):
     cochera = get_object_or_404(Cochera, id=cochera_id)
 
-    token, forbidden = _validate_token_for_cochera(request, cochera.id)
-    if forbidden:
-        return forbidden
+    token = request.GET.get("t", "")
+    try:
+        unsigned = QR_SIGNER.unsign(token)
+        if str(cochera.id) != str(unsigned):
+            return HttpResponseForbidden("Token inválido.")
+    except BadSignature:
+        return HttpResponseForbidden("Token inválido.")
 
-    form = PublicIngresoForm(request.POST or None, cochera=cochera)
+    tipos = TipoEspacio.objects.all().order_by("nombre")
 
-    if request.method == "POST" and form.is_valid():
-        movimiento = form.save_ingreso(cochera=cochera)
-        return render(
-            request,
-            "parking/ingreso_public_ok.html",
-            {"cochera": cochera, "movimiento": movimiento},
-        )
+    if request.method == "POST":
+        tipo_id = request.POST.get("tipo_id")
+        # en público, si no mandan ticket, lo generamos
+        ticket = request.POST.get("ticket", "").strip() or _gen_ticket_publico()
+        patente_ult3 = request.POST.get("patente_ult3", "")
 
-    return render(request, "parking/ingreso_public.html", {"cochera": cochera, "form": form})
+        try:
+            tipo = TipoEspacio.objects.get(id=tipo_id)
 
+            ingresar_vehiculo(
+                cochera=cochera,
+                operador=cochera.owner,  # no hay login, guardamos como operador el dueño
+                tipo=tipo,
+                ticket=ticket,
+                patente_ult3=patente_ult3,
+                cliente_data={
+                    "nombre": request.POST.get("nombre", ""),
+                    "apellido": request.POST.get("apellido", ""),
+                    "telefono": request.POST.get("telefono", ""),
+                    "email": request.POST.get("email", ""),
+                },
+            )
+
+            messages.success(request, "Ingreso cargado correctamente. ¡Gracias!")
+            # redirigimos al mismo form manteniendo el token
+            return redirect(
+                reverse("parking:ingreso_public", kwargs={"cochera_id": cochera.id})
+                + "?"
+                + urlencode({"t": token})
+            )
+
+        except ValueError as e:
+            messages.error(request, str(e))
+        except TipoEspacio.DoesNotExist:
+            messages.error(request, "Tipo de vehículo inválido.")
+
+    # GET (o si hubo error): precargamos un ticket para que el form no falle
+    ctx = {
+        "cochera": cochera,
+        "tipos": tipos,
+        "public_mode": True,
+        "ticket_prefill": _gen_ticket_publico(),
+        "public_token": token,
+    }
+    return render(request, "parking/ingreso.html", ctx)
 
 # =========================
 # CRUD Cochera (unificado)
