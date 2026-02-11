@@ -11,5 +11,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home),
     path("", include("users.urls")),
-    path("parking/", include("parking.urls")),
+    path("", include("qrform.urls")),
+    path("parking/", include(("parking.urls", "parking"), namespace="parking"))
 ]

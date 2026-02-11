@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Ingreso - {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="mb-2">Ingreso a {{ cochera.nombre }}</h3>
+      <p class="text-muted mb-4">Completá los datos para registrar tu ingreso.</p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Tipo de vehículo *</label>
+            {{ form.tipo }}
+            <div class="text-danger small">{{ form.tipo.errors }}</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Patente (últimos 3) (opcional)</label>
+            {{ form.patente_ult3 }}
+            <div class="text-danger small">{{ form.patente_ult3.errors }}</div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="col-md-6">
+            <label class="form-label">Nombre</label>
+            {{ form.nombre }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Apellido</label>
+            {{ form.apellido }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            {{ form.telefono }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            {{ form.email }}
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button class="btn btn-primary" type="submit">Confirmar ingreso</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -177,3 +177,5 @@ class Movimiento(models.Model):
 
     def __str__(self):
         return f"{self.vehiculo.ticket} - {self.cochera.nombre} - {self.estado}"
+    
+TipoVehiculo = TipoEspacio

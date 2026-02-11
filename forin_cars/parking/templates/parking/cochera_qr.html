@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}QR de ingreso{% endblock %}
+
+{% block content %}
+<div class="card p-4">
+  <h2 class="mb-2">QR de ingreso: {{ cochera.nombre }}</h2>
+  <p class="text-muted mb-4">
+    Escaneá este QR para abrir el formulario público de ingreso a esta cochera.
+  </p>
+
+  <div class="d-flex justify-content-center mb-4">
+    <img
+      src="data:image/png;base64,{{ qr_b64 }}"
+      alt="QR {{ cochera.nombre }}"
+      style="max-width: 280px; width: 100%; height: auto;"
+    />
+  </div>
+
+  <label class="form-label">Link directo</label>
+  <input
+    class="form-control mb-2"
+    value="{{ public_url }}"
+    readonly
+    onclick="this.select();"
+  />
+  <small class="text-muted">Tip: clic para seleccionar y copiar.</small>
+
+  <div class="mt-4 d-flex justify-content-center">
+    <a class="btn btn-outline-light" href="{% url 'dashboard' %}">
+      Volver al dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}
