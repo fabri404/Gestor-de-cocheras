@@ -1,10 +1,9 @@
 from django import forms
 from django.core.validators import validate_email
 from uuid import uuid4
-
 from .services_movimientos import ingresar_vehiculo
 from .models import Cochera, TipoEspacio
-
+        
 
 class PublicIngresoForm(forms.Form):
     tipo = forms.ModelChoiceField(
@@ -38,31 +37,10 @@ class PublicIngresoForm(forms.Form):
             )
             self.fields["tipo"].queryset = qs
 
-    def clean_patente_ult3(self):
-        v = (self.cleaned_data.get("patente_ult3") or "").strip().upper()
-        if not v:
-            return ""
-        v = v.replace(" ", "")
-        if len(v) != 3:
-            raise forms.ValidationError("La patente (últimos 3) debe tener exactamente 3 caracteres.")
-        if not v.isalnum():
-            raise forms.ValidationError("La patente solo puede tener letras y números.")
-        return v
-
-    def _gen_ticket(self) -> str:
-        # <= 20 chars, único a nivel DB (hay constraint unique en ticket)
-        return f"QR-{uuid4().hex[:8].upper()}"
-
     def save_ingreso(self, *, cochera, operador=None):
-        """
-        - cochera: Cochera destino
-        - operador: usuario que queda como operador del movimiento.
-          Para flujo público (QR), si no pasás operador, usamos el owner de la cochera.
-        """
         if operador is None:
-            operador = cochera.owner  # fallback seguro para no romper la lógica/métricas
+            operador = cochera.owner
 
-        ticket = self._gen_ticket()
         cliente_data = {
             "nombre": (self.cleaned_data.get("nombre") or "").strip(),
             "apellido": (self.cleaned_data.get("apellido") or "").strip(),
@@ -74,7 +52,8 @@ class PublicIngresoForm(forms.Form):
         movimiento = ingresar_vehiculo(
             cochera=cochera,
             operador=operador,
-            ticket=ticket,
+            # ticket NO se pasa => autogenerado en service
+            ticket_prefix="QR",
             tipo=self.cleaned_data["tipo"],
             patente_ult3=patente_ult3,
             cliente_data=cliente_data,

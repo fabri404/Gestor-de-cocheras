@@ -11,7 +11,6 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-
 from .forms import CapacidadForm, CocheraForm, EmpleadosForm, PublicIngresoForm, TarifaForm
 from .models import Cochera, TipoEspacio, TarifaHora
 from .services import (

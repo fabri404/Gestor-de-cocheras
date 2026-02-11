@@ -56,12 +56,9 @@
           </div>
         {% else %}
           <div class="mb-3">
-            <label class="form-label">Ticket / Alias <span class="text-danger">*</span></label>
-            <input name="ticket"
-                   class="form-control"
-                   placeholder="Ej: TKT-104 o ROJO"
-                   required
-                   maxlength="20">
+            <label class="form-label">Ticket</label>
+            <input class="form-control" value="Se generará automáticamente al guardar" disabled>
+            <div class="form-text">El sistema genera un ticket único.</div>
           </div>
         {% endif %}
 
