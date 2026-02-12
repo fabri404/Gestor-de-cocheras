@@ -281,7 +281,7 @@
         </div>
 
         {% if can_manage_cochera %}
-          <a class="btn btn-primary" href="{% url 'cochera_new' %}">Crear cochera</a>
+          <a class="btn btn-primary" href="{% url 'parking:cochera_new' %}">Crear cochera</a>
         {% endif %}
       </div>
     </div>
@@ -291,8 +291,7 @@
   <hr class="my-4">
 
   <div class="d-flex align-items-center justify-content-between mb-2">
-    <h4 class="mb-0">Detalle global por tipo</h4>
-    <div class="text-muted small">Capacidades agregadas</div>
+    <h4 class="mb-0">Ocupacion total de todas las cochera s</h4>
   </div>
 
   <div class="card shadow-sm mb-4">

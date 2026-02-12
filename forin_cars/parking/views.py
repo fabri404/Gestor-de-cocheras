@@ -21,6 +21,7 @@ from .services import (
     upsert_tarifas,
 )
 from .services_movimientos import egresar_vehiculo, ingresar_vehiculo
+import json
 
 
 # =========================
@@ -37,6 +38,13 @@ URL_DASHBOARD = "dashboard"
 # =========================
 # Helpers / permisos
 # =========================
+
+def _tarifas_json_for_cochera(cochera) -> str:
+    qs = TarifaHora.objects.filter(cochera=cochera).values_list("tipo_id", "precio_hora")
+    # str() para evitar problemas con Decimal en JSON
+    return json.dumps({str(tipo_id): str(precio) for tipo_id, precio in qs})
+
+
 
 def is_admin_dueno(user) -> bool:
     if not user.is_authenticated:
@@ -173,6 +181,8 @@ def _gen_ticket_publico() -> str:
 
 def ingreso_public_view(request, cochera_id: int):
     cochera = get_object_or_404(Cochera, id=cochera_id)
+    
+    horas = int(request.POST.get("horas") or 1)
 
     token = request.GET.get("t", "")
     try:
@@ -220,6 +230,8 @@ def ingreso_public_view(request, cochera_id: int):
         except TipoEspacio.DoesNotExist:
             messages.error(request, "Tipo de vehículo inválido.")
 
+    tarifas_json = _tarifas_json_for_cochera(cochera)
+
     # GET (o si hubo error): precargamos un ticket para que el form no falle
     ctx = {
         "cochera": cochera,
@@ -227,6 +239,7 @@ def ingreso_public_view(request, cochera_id: int):
         "public_mode": True,
         "ticket_prefill": _gen_ticket_publico(),
         "public_token": token,
+        "tarifas_json": tarifas_json,
     }
     return render(request, "parking/ingreso.html", ctx)
 
@@ -385,6 +398,10 @@ def ingreso_view(request, cochera_id: int):
     cochera = get_object_or_404(cochera_queryset_for(request.user), id=cochera_id)
     tipos = TipoEspacio.objects.all().order_by("nombre")
 
+    horas = int(request.POST.get("horas") or 1)
+    if horas <= 0:
+        raise ValueError("Horas inválidas.")
+
     if request.method == "POST":
         tipo_id = request.POST.get("tipo_id")
         ticket = request.POST.get("ticket", "")
@@ -401,6 +418,7 @@ def ingreso_view(request, cochera_id: int):
                     tipo=tipo,
                     ticket=ticket,
                     patente_ult3=patente_ult3,
+                    horas_previstas=horas,
                     cliente_data={
                         "nombre": request.POST.get("nombre", ""),
                         "apellido": request.POST.get("apellido", ""),
@@ -415,8 +433,11 @@ def ingreso_view(request, cochera_id: int):
                 messages.error(request, "Tipo de vehículo inválido.")
             except ValueError as e:
                 messages.error(request, str(e))
+    tarifas_json = _tarifas_json_for_cochera(cochera)
 
-    return render(request, "parking/ingreso.html", {"cochera": cochera, "tipos": tipos})
+    return render(request,
+        "parking/ingreso.html",
+        {"cochera": cochera, "tipos": tipos, "tarifas_json": tarifas_json})
 
 
 @login_required

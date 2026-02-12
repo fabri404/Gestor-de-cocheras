@@ -11,6 +11,15 @@ class PublicIngresoForm(forms.Form):
         empty_label="Seleccioná el tipo de vehículo",
         required=True,
     )
+
+    horas = forms.IntegerField(
+        min_value=1,
+        required=True,
+        initial=1,
+        label="Horas a permanecer",
+        help_text="Se usa para calcular total estimado.",
+    )
+
     patente_ult3 = forms.CharField(
         max_length=3,
         required=False,
@@ -48,15 +57,17 @@ class PublicIngresoForm(forms.Form):
             "email": (self.cleaned_data.get("email") or "").strip().lower(),
         }
         patente_ult3 = self.cleaned_data.get("patente_ult3") or ""
+        horas_previstas = int(self.cleaned_data.get("horas") or 1)
 
         movimiento = ingresar_vehiculo(
             cochera=cochera,
             operador=operador,
-            # ticket NO se pasa => autogenerado en service
+            # ticket => autogenerado en service
             ticket_prefix="QR",
             tipo=self.cleaned_data["tipo"],
             patente_ult3=patente_ult3,
             cliente_data=cliente_data,
+            horas_previstas=horas_previstas,  
         )
         return movimiento
 

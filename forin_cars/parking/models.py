@@ -168,11 +168,18 @@ class Movimiento(models.Model):
     ingreso_at = models.DateTimeField(default=timezone.now)
     egreso_at = models.DateTimeField(null=True, blank=True)
 
+    # ✅ NUEVO (estimaciones al ingreso)
+    horas_previstas = models.PositiveIntegerField(default=1)
+    egreso_estimado_at = models.DateTimeField(null=True, blank=True)
+    tarifa_hora_aplicada = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    monto_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
     class Meta:
         indexes = [
             models.Index(fields=["cochera", "estado"]),
             models.Index(fields=["vehiculo", "estado"]),
             models.Index(fields=["espacio", "estado"]),
+            models.Index(fields=["egreso_estimado_at"]),
         ]
 
     def __str__(self):

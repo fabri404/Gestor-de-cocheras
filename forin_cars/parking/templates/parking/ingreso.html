@@ -46,6 +46,49 @@
           <div class="form-text">Debe coincidir con los tipos configurados en la cochera.</div>
         </div>
 
+        <!-- NUEVO: horas + tarifa por hora + total + salida estimada -->
+        <div class="mb-3">
+          <label class="form-label">Horas a permanecer <span class="text-danger">*</span></label>
+          <input
+            type="number"
+            name="horas"
+            id="id_horas"
+            class="form-control"
+            min="1"
+            step="1"
+            value="1"
+            required
+          >
+          <div class="form-text">Se usa para calcular el total estimado.</div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-md-4">
+            <div class="border rounded-3 p-3 bg-light">
+              <div class="small text-muted">Tarifa por hora</div>
+              <div class="fs-5 fw-semibold" id="tarifa_hora_text">—</div>
+              <div class="small text-danger mt-1 d-none" id="tarifa_warning">
+                No hay tarifa configurada para este tipo.
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="border rounded-3 p-3 bg-light">
+              <div class="small text-muted">Total estimado</div>
+              <div class="fs-5 fw-semibold" id="total_text">—</div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="border rounded-3 p-3 bg-light">
+              <div class="small text-muted">Salida estimada</div>
+              <div class="fs-5 fw-semibold" id="salida_text">—</div>
+            </div>
+          </div>
+        </div>
+        <!-- /NUEVO -->
+
         {% if public_mode %}
           <!-- ticket autogenerado -->
           <input type="hidden" name="ticket" value="{{ ticket_prefill }}">
@@ -97,6 +140,64 @@
             <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Cancelar</a>
           {% endif %}
         </div>
+
+        <!-- NUEVO: JSON tarifas + JS cálculo -->
+        <script id="tarifas-data" type="application/json">
+          {{ tarifas_json|default:"{}"|safe }}
+        </script>
+
+        <script>
+        (() => {
+          const tarifas = JSON.parse(document.getElementById("tarifas-data").textContent || "{}");
+
+          const tipoSel   = document.querySelector('select[name="tipo_id"]');
+          const horasInp  = document.getElementById("id_horas");
+          const tarifaEl  = document.getElementById("tarifa_hora_text");
+          const totalEl   = document.getElementById("total_text");
+          const salidaEl  = document.getElementById("salida_text");
+          const warnEl    = document.getElementById("tarifa_warning");
+          const submitBtn = document.querySelector('button[type="submit"]');
+
+          function money(n) {
+            if (n === null || Number.isNaN(n)) return "—";
+            return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(n);
+          }
+
+          function update() {
+            const tipoId = (tipoSel && tipoSel.value) ? tipoSel.value : null;
+            const horas = parseInt(horasInp.value || "0", 10);
+
+            const tarifaRaw = tipoId ? tarifas[tipoId] : null;
+            const tarifa = (tarifaRaw != null) ? parseFloat(String(tarifaRaw).replace(",", ".")) : NaN;
+
+            const hasTipo = !!tipoId;
+            const hasTarifa = Number.isFinite(tarifa);
+
+            tarifaEl.textContent = hasTarifa ? money(tarifa) : "—";
+
+            // warning + bloquear submit si eligen tipo sin tarifa
+            if (warnEl) warnEl.classList.toggle("d-none", !hasTipo || hasTarifa);
+            if (submitBtn) submitBtn.disabled = (!hasTipo || !hasTarifa || !(horas > 0));
+
+            const total = (hasTarifa && horas > 0) ? tarifa * horas : NaN;
+            totalEl.textContent = money(total);
+
+            if (horas > 0) {
+              const d = new Date();
+              d.setHours(d.getHours() + horas);
+              salidaEl.textContent = d.toLocaleString("es-AR");
+            } else {
+              salidaEl.textContent = "—";
+            }
+          }
+
+          if (tipoSel)  tipoSel.addEventListener("change", update);
+          if (horasInp) horasInp.addEventListener("input", update);
+          update();
+        })();
+        </script>
+        <!-- /NUEVO -->
+
       </form>
 
     </div>

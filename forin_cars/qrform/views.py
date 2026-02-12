@@ -5,6 +5,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from datetime import timedelta
 
 from .forms import SubmissionForm
 from .models import QRLink
@@ -16,7 +17,7 @@ def qr_new(request):
     """
     if request.method == "POST":
         # Podés setear expiración si querés (ej: 24hs)
-        expires_at = timezone.now() + timezone.timedelta(hours=24)
+        expires_at = timezone.now() + timedelta(hours=24)
 
         qr = QRLink.objects.create(
             expires_at=expires_at,

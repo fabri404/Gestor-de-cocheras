@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from decimal import Decimal
+from datetime import timedelta
+from .models import TarifaHora, Movimiento
+
 import secrets
 from django.db import transaction, IntegrityError
 from django.utils import timezone
@@ -28,11 +32,24 @@ def generar_ticket_unico(prefix: str = "TKT") -> str:
 
 
 @transaction.atomic
-def ingresar_vehiculo(*, cochera, operador, tipo, ticket: str | None = None, patente_ult3: str | None = None, cliente_data: dict | None = None):
+def ingresar_vehiculo(*, cochera, operador, tipo, ticket="", patente_ult3="", cliente_data=None, ticket_prefix="", horas_previstas=1):
     """
     - ticket: si viene vacío/None => se genera automático y único.
     - tipo: debería ser tu TipoEspacio/TipoVehiculo según tu modelo (lo que uses en Espacio.tipo)
     """
+    
+    horas_previstas = int(horas_previstas or 1)
+    if horas_previstas < 1:
+        raise ValueError("Horas inválidas.")
+
+    # Buscar tarifa por cochera + tipo
+    tarifa = TarifaHora.objects.filter(cochera=cochera, tipo=tipo).first()
+    if not tarifa:
+        raise ValueError("No hay tarifa configurada para este tipo de vehículo.")
+
+    precio_hora = Decimal(tarifa.precio_hora)
+    ahora = timezone.now()
+
     ult3 = _normalize_ult3(patente_ult3)
 
     # Si el ticket viene vacío: generamos uno y lo garantizamos contra colisiones por unique constraint
@@ -113,8 +130,11 @@ def ingresar_vehiculo(*, cochera, operador, tipo, ticket: str | None = None, pat
         vehiculo=vehiculo,
         espacio=espacio,
         operador=operador,
-        estado="ABIERTO",
-        ingreso_at=timezone.now(),
+        ingreso_at=ahora,
+        horas_previstas=horas_previstas,
+        tarifa_hora_aplicada=precio_hora,
+        monto_estimado=(precio_hora * Decimal(horas_previstas)),
+        egreso_estimado_at=(ahora + timedelta(hours=horas_previstas)),
     )
     return mov
 
