@@ -3,39 +3,10 @@
 
 {% block content %}
 <div class="container py-4">
-  <h2 class="fw-bold">Configurar Cochera</h2>
-  <p class="text-muted">Definí nombre/dirección y cuántos espacios tenés por tipo.</p>
+  <h2 class="fw-bold">Dar de baja </h2>
+  <p class="text-muted">Ingresa el ticket del movimiento para liberar el espacio.</p>
 
   <form method="post" class="card p-4">
-    {% csrf_token %}
-
-    <h5 class="fw-bold mb-3">Datos de la cochera</h5>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">{{ cochera_form.nombre.label }}</label>
-        {{ cochera_form.nombre }}
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">{{ cochera_form.direccion.label }}</label>
-        {{ cochera_form.direccion }}
-      </div>
-    </div>
-
-    <hr class="my-4">
-
-    <h5 class="fw-bold mb-3">Capacidad por tipo</h5>
-    <div class="row g-3">
-      {% for field in cap_form %}
-        <div class="col-md-3">
-          <label class="form-label">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}
-            <div class="text-danger small">{{ field.errors|striptags }}</div>
-          {% endif %}
-        </div>
-      {% endfor %}
-    </div>
-
     <div class="container py-4">
       <h2>Egreso</h2>
 
@@ -43,7 +14,7 @@
         {% csrf_token %}
         <div class="mb-3">
           <label class="form-label">Ticket / Alias (obligatorio)</label>
-          <input name="ticket" class="form-control" placeholder="Ej: TKT-104 o ROJO" required>
+          <input name="ticket" class="form-control" placeholder="Ej: TKT-C0884038" required>
         </div>
 
         <div class="d-flex gap-2">

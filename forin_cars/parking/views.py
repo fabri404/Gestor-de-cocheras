@@ -22,6 +22,8 @@ from .services import (
 )
 from .services_movimientos import egresar_vehiculo, ingresar_vehiculo
 import json
+from django.http import HttpResponse
+from .pdf_utils import build_movimiento_pdf_bytes
 
 
 # =========================
@@ -392,27 +394,31 @@ def egreso_select_cochera_view(request):
 # Operación: ingreso / egreso
 # =========================
 
+
 @login_required
 @user_passes_test(can_operate)
 def ingreso_view(request, cochera_id: int):
     cochera = get_object_or_404(cochera_queryset_for(request.user), id=cochera_id)
     tipos = TipoEspacio.objects.all().order_by("nombre")
 
-    horas = int(request.POST.get("horas") or 1)
-    if horas <= 0:
-        raise ValueError("Horas inválidas.")
-
     if request.method == "POST":
         tipo_id = request.POST.get("tipo_id")
         ticket = request.POST.get("ticket", "")
         patente_ult3 = request.POST.get("patente_ult3", "")
+
+        # ✅ Horas dentro del POST
+        horas = int(request.POST.get("horas") or 1)
+        if horas < 1:
+            messages.error(request, "Horas inválidas.")
+            return redirect(request.path)
 
         if not tipo_id:
             messages.error(request, "Tipo de vehículo requerido.")
         else:
             try:
                 tipo = TipoEspacio.objects.get(id=tipo_id)
-                ingresar_vehiculo(
+
+                mov = ingresar_vehiculo(
                     cochera=cochera,
                     operador=request.user,
                     tipo=tipo,
@@ -426,19 +432,24 @@ def ingreso_view(request, cochera_id: int):
                         "email": request.POST.get("email", ""),
                     },
                 )
-                messages.success(request, "Ingreso realizado correctamente.")
-                return redirect(f"{reverse(URL_DASHBOARD)}?cochera={cochera.id}")
+
+                # ✅ Generar PDF y devolverlo
+                pdf_bytes = build_movimiento_pdf_bytes(mov, horas_previstas=horas)
+                resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+                resp["Content-Disposition"] = f'attachment; filename="ticket-{mov.vehiculo.ticket}.pdf"'
+                return resp
 
             except TipoEspacio.DoesNotExist:
                 messages.error(request, "Tipo de vehículo inválido.")
             except ValueError as e:
                 messages.error(request, str(e))
+
     tarifas_json = _tarifas_json_for_cochera(cochera)
-
-    return render(request,
+    return render(
+        request,
         "parking/ingreso.html",
-        {"cochera": cochera, "tipos": tipos, "tarifas_json": tarifas_json})
-
+        {"cochera": cochera, "tipos": tipos, "tarifas_json": tarifas_json},
+    )   
 
 @login_required
 @user_passes_test(can_operate)
