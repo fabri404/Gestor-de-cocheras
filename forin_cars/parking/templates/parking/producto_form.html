@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Editar{% else %}Nuevo{% endif %} Producto — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3" style="max-width:480px;">
+  <a href="{% url 'parking:inventario_list' cochera.id %}" class="btn btn-sm btn-outline-secondary mb-3">
+    <i class="fa-solid fa-chevron-left me-1"></i> Inventario
+  </a>
+  <h2 class="fc-section-title mb-3">{% if is_edit %}Editar producto{% else %}Nuevo producto{% endif %}</h2>
+
+  <div class="fc-card p-3">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors|join:", " }}</div>{% endif %}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-floppy-disk me-1"></i> Guardar
+        </button>
+        <a href="{% url 'parking:inventario_list' cochera.id %}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

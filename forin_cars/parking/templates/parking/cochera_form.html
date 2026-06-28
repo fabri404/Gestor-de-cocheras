@@ -2,69 +2,81 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h2 class="mb-3">{{ title }}</h2>
+<div class="container px-3 px-md-0 pt-3" style="max-width: 720px;">
 
-  <form method="post" class="card p-3 shadow-sm">
+  <div class="mb-3">
+    <h1 class="fc-section-title" style="font-size:1.35rem;">{{ title }}</h1>
+  </div>
+
+  <form method="post">
     {% csrf_token %}
 
-    <h5 class="mb-2">Datos de la cochera</h5>
-    <div class="row g-3">
+    {# ===== Datos de la cochera ===== #}
+    <div class="fc-form-section">
+      <h2 class="fc-section-title mb-3">Datos de la cochera</h2>
       {% for field in cochera_form %}
-        <div class="col-12">
-          <label class="form-label">{{ field.label }}</label>
+        <div class="mb-3">
+          <label class="fc-label">{{ field.label }}</label>
           {{ field }}
-          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          {% if field.help_text %}<div class="fc-section-sub mt-1">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
         </div>
       {% endfor %}
     </div>
 
-    <hr class="my-3">
-
-    <h5 class="mb-2">Capacidades (mapa)</h5>
-    <div class="row g-3">
-      {% for field in cap_form %}
-        <div class="col-12 col-md-6">
-          <label class="form-label">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-        </div>
-      {% endfor %}
-    </div>
-
-    <hr class="my-3">
-
-    <h5 class="mb-2">Precios por hora</h5>
-    <div class="row g-3">
-      {% for field in tarifa_form %}
-        <div class="col-12 col-md-6">
-          <label class="form-label">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-        </div>
-      {% endfor %}
-    </div>
-
-    <hr class="my-3">
-
-    <h5 class="mb-2">Empleados</h5>
-    {% for field in empleados_form %}
-      <div class="mb-3">
-        <label class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.help_text %}<div class="text-muted small">{{ field.help_text }}</div>{% endif %}
-        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+    {# ===== Capacidades ===== #}
+    <div class="fc-form-section">
+      <h2 class="fc-section-title mb-3">Capacidades</h2>
+      <div class="row g-3">
+        {% for field in cap_form %}
+          <div class="col-12 col-md-6">
+            <label class="fc-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
       </div>
-    {% endfor %}
-
-    {% if empleados_form.non_field_errors %}
-      <div class="alert alert-danger">{{ empleados_form.non_field_errors }}</div>
-    {% endif %}
-
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary" type="submit">Guardar</button>
-      <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Volver</a>
     </div>
+
+    {# ===== Precios por hora ===== #}
+    <div class="fc-form-section">
+      <h2 class="fc-section-title mb-3">Precios por hora</h2>
+      <div class="row g-3">
+        {% for field in tarifa_form %}
+          <div class="col-12 col-md-6">
+            <label class="fc-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ===== Empleados ===== #}
+    <div class="fc-form-section">
+      <h2 class="fc-section-title mb-3">Empleados</h2>
+      {% for field in empleados_form %}
+        <div class="mb-3">
+          <label class="fc-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="fc-section-sub mt-1">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      {% if empleados_form.non_field_errors %}
+        <div class="fc-alert fc-alert--danger mt-2">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>{{ empleados_form.non_field_errors }}</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <button class="fc-action-btn fc-action-btn--success" type="submit">
+      <i class="fa-solid fa-floppy-disk"></i> Guardar
+    </button>
+
+    <a class="d-block text-center mt-3 text-decoration-none fc-section-sub" href="{% url 'dashboard' %}">Volver</a>
   </form>
+
 </div>
 {% endblock %}

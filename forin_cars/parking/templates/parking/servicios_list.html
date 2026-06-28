@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Servicios — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="fc-section-title mb-0">Catálogo de Servicios</h2>
+      <div class="fc-section-sub">{{ cochera.nombre }}</div>
+    </div>
+    {% if can_manage_cochera %}
+      <a class="btn btn-sm" href="{% url 'parking:servicio_new' cochera.id %}"
+         style="background:var(--fc-blue);color:#fff;border-radius:12px;">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo servicio
+      </a>
+    {% endif %}
+  </div>
+
+  {% regroup servicios by get_categoria_display as grupos %}
+
+  {% if servicios %}
+    {% for grupo in grupos %}
+      <h5 class="fw-semibold mt-4 mb-2" style="color:var(--fc-text-muted);">{{ grupo.grouper }}</h5>
+      <div class="fc-card p-0 mb-3">
+        {% for srv in grupo.list %}
+          <div class="fc-zone-row d-flex align-items-center gap-3 {% if not srv.activo %}opacity-50{% endif %}">
+            <div class="fc-icon-badge fc-icon-badge--{% if srv.activo %}blue{% else %}orange{% endif %}">
+              <i class="fa-solid fa-spray-can-sparkles"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">{{ srv.nombre }}</span>
+                <span class="fw-bold">${{ srv.precio }}</span>
+              </div>
+              <div class="fc-section-sub">
+                {{ srv.duracion_minutos }} min
+                {% if srv.descripcion %} · {{ srv.descripcion|truncatechars:60 }}{% endif %}
+                {% if not srv.activo %}<span class="text-danger ms-1">Inactivo</span>{% endif %}
+              </div>
+            </div>
+            {% if can_manage_cochera %}
+              <div class="d-flex gap-1">
+                <a href="{% url 'parking:servicio_edit' cochera.id srv.id %}"
+                   class="btn btn-sm btn-outline-secondary btn-sm">
+                  <i class="fa-solid fa-pen"></i>
+                </a>
+                <form method="post" action="{% url 'parking:servicio_toggle' cochera.id srv.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm {% if srv.activo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                    <i class="fa-solid fa-{% if srv.activo %}eye-slash{% else %}eye{% endif %}"></i>
+                  </button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="fc-card p-4 text-center">
+      <div class="fc-icon-badge fc-icon-badge--blue mx-auto mb-3"><i class="fa-solid fa-spray-can-sparkles"></i></div>
+      <h3 class="fc-section-title mb-1">Sin servicios cargados</h3>
+      <div class="fc-section-sub mb-3">Creá el catálogo de servicios de este local para poder generar órdenes de trabajo.</div>
+      {% if can_manage_cochera %}
+        <a class="fc-action-btn fc-action-btn--primary" href="{% url 'parking:servicio_new' cochera.id %}">
+          <i class="fa-solid fa-plus"></i> Crear primer servicio
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-chevron-left me-1"></i> Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

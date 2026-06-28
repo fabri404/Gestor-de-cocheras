@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Checklist — {{ orden.numero }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3" style="max-width:560px;">
+
+  <a href="{% url 'parking:orden_detail' cochera.id orden.id %}" class="btn btn-sm btn-outline-secondary mb-3">
+    <i class="fa-solid fa-chevron-left me-1"></i> Volver a la orden
+  </a>
+  <h2 class="fc-section-title mb-1">Checklist de Calidad</h2>
+  <div class="fc-section-sub mb-3">{{ orden.numero }} — {{ orden.vehiculo.patente|default:"?" }}</div>
+
+  {% if checklist %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="fc-card p-0 mb-3">
+        {% for oc in checklist %}
+          <div class="fc-zone-row">
+            <div class="form-check d-flex align-items-start gap-3 m-0">
+              <input type="hidden" name="item_{{ oc.item.id }}" value="0">
+              <input class="form-check-input mt-1" type="checkbox"
+                     name="item_{{ oc.item.id }}" value="1"
+                     id="item_{{ oc.item.id }}"
+                     {% if oc.completado %}checked{% endif %}
+                     style="width:20px;height:20px;cursor:pointer;">
+              <div class="flex-grow-1">
+                <label class="form-check-label fw-semibold" for="item_{{ oc.item.id }}">
+                  {{ oc.item.descripcion }}
+                </label>
+                <input type="text" name="obs_{{ oc.item.id }}"
+                       class="form-control form-control-sm mt-1"
+                       placeholder="Observación (opcional)"
+                       value="{{ oc.observacion }}">
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success flex-grow-1">
+          <i class="fa-solid fa-floppy-disk me-1"></i> Guardar checklist
+        </button>
+        <a href="{% url 'parking:orden_detail' cochera.id orden.id %}" class="btn btn-outline-secondary">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  {% else %}
+    <div class="fc-card p-4 text-center">
+      <div class="fc-section-sub mb-3">No hay items de checklist configurados para este local.</div>
+      {% if can_manage_cochera %}
+        <a href="{% url 'parking:checklist_config' cochera.id %}" class="btn btn-primary">
+          <i class="fa-solid fa-gear me-1"></i> Configurar checklist
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

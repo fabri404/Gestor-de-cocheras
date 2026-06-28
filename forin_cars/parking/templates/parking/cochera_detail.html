@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ cochera.nombre }} — Detalle{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3" style="max-width: 760px;">
+
+  <div class="d-flex align-items-start justify-content-between mb-1">
+    <h1 class="fc-section-title" style="font-size:1.4rem;">{{ cochera.nombre }}</h1>
+    <span class="fc-trend {% if not cochera.activa %}fc-trend--down{% endif %}">
+      {{ cochera.estado }}
+    </span>
+  </div>
+  <div class="fc-section-sub mb-3">
+    <i class="fa-solid fa-location-dot me-1"></i>{{ cochera.direccion|default:"Sin dirección" }}
+  </div>
+
+  {# ===== Capacidad y tarifas ===== #}
+  <div class="fc-form-section">
+    <h2 class="fc-section-title mb-3">Capacidad y tarifas</h2>
+    {% if capacidades %}
+      {% for cap in capacidades %}
+        <div class="fc-zone-row d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <div class="fc-icon-badge fc-icon-badge--blue"><i class="fa-solid fa-car"></i></div>
+            <div>
+              <div class="fw-semibold">{{ cap.tipo.nombre }}</div>
+              <div class="fc-section-sub">{{ cap.cantidad }} espacios</div>
+            </div>
+          </div>
+          <div class="fw-bold" style="color:var(--fc-green);">
+            {% for t in tarifas %}{% if t.tipo_id == cap.tipo_id %}${{ t.precio_hora }}/h{% endif %}{% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="fc-section-sub">Sin capacidades configuradas.</div>
+    {% endif %}
+  </div>
+
+  {# ===== Empleados ===== #}
+  <div class="fc-form-section">
+    <h2 class="fc-section-title mb-3">Empleados</h2>
+    {% if empleados %}
+      {% for emp in empleados %}
+        <div class="fc-zone-row d-flex align-items-center gap-3">
+          <div class="fc-icon-badge fc-icon-badge--purple"><i class="fa-solid fa-user"></i></div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="fw-semibold text-truncate">{{ emp.get_full_name|default:emp.username }}</div>
+            <div class="fc-section-sub text-truncate">{{ emp.email }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="fc-section-sub">Sin empleados asignados.</div>
+    {% endif %}
+  </div>
+
+  {# ===== Acciones ===== #}
+  <div class="d-flex flex-wrap gap-2">
+    {% if can_manage_cochera %}
+      <a class="btn" href="{% url 'parking:cochera_edit' cochera.id %}"
+         style="background:rgba(249,115,22,.12);color:var(--fc-orange);border-radius:12px;">
+        <i class="fa-solid fa-pen me-1"></i>Editar
+      </a>
+      <a class="btn" href="{% url 'parking:cochera_qr' cochera.id %}"
+         style="background:var(--fc-border);color:var(--fc-text);border-radius:12px;">
+        <i class="fa-solid fa-qrcode me-1"></i>Ver QR
+      </a>
+    {% endif %}
+    <a class="btn" href="{% url 'dashboard' %}"
+       style="background:var(--fc-border);color:var(--fc-text);border-radius:12px;">
+      <i class="fa-solid fa-arrow-left me-1"></i>Volver
+    </a>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,8 +1,23 @@
 from django import forms
 from django.core.validators import validate_email
-from uuid import uuid4
 from .services_movimientos import ingresar_vehiculo
-from .models import Cochera, TipoEspacio
+from .models import (
+    Cochera,
+    Cliente,
+    Vehiculo,
+    TipoEspacio,
+    Servicio,
+    OrdenTrabajo,
+    OrdenServicio,
+    Turno,
+    ChecklistItem,
+    FotoOrden,
+    CategoriaProducto,
+    Producto,
+    MovimientoInventario,
+    Plan,
+    Membresia,
+)
         
 
 class PublicIngresoForm(forms.Form):
@@ -133,7 +148,6 @@ class EmpleadosForm(forms.Form):
                 validate_email(e)
                 emails_list.append(e)
 
-        # unique preservando orden
         emails_list = list(dict.fromkeys(emails_list))
 
         if cantidad is not None and cantidad != len(emails_list):
@@ -143,3 +157,198 @@ class EmpleadosForm(forms.Form):
 
         cleaned["emails_list"] = emails_list
         return cleaned
+
+
+# ─── Car wash forms ──────────────────────────────────────────────────────────
+
+class ClienteForm(forms.ModelForm):
+    class Meta:
+        model = Cliente
+        fields = ["nombre", "apellido", "telefono", "email", "observaciones", "es_vip"]
+        widgets = {
+            "observaciones": forms.Textarea(attrs={"rows": 2}),
+        }
+
+
+class VehiculoForm(forms.ModelForm):
+    class Meta:
+        model = Vehiculo
+        fields = ["patente", "marca", "modelo", "anio", "color", "tipo"]
+        labels = {
+            "patente": "Patente",
+            "marca": "Marca",
+            "modelo": "Modelo",
+            "anio": "Año",
+            "color": "Color",
+            "tipo": "Tipo de vehículo",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tipo"].queryset = TipoEspacio.objects.all().order_by("nombre")
+        self.fields["tipo"].empty_label = "Seleccioná el tipo"
+
+
+class ServicioForm(forms.ModelForm):
+    class Meta:
+        model = Servicio
+        fields = ["nombre", "descripcion", "precio", "duracion_minutos", "categoria", "activo"]
+        widgets = {
+            "descripcion": forms.Textarea(attrs={"rows": 2}),
+        }
+
+
+class OrdenTrabajoForm(forms.Form):
+    """
+    Step 1: datos de cliente + vehículo + servicios + observaciones.
+    """
+    # Cliente
+    cliente_nombre = forms.CharField(max_length=80, required=False, label="Nombre")
+    cliente_apellido = forms.CharField(max_length=80, required=False, label="Apellido")
+    cliente_telefono = forms.CharField(max_length=30, required=False, label="Teléfono")
+    cliente_email = forms.EmailField(required=False, label="Email")
+
+    # Vehículo
+    vehiculo_patente = forms.CharField(
+        max_length=10, required=True, label="Patente",
+        widget=forms.TextInput(attrs={"placeholder": "ABC123", "class": "text-uppercase"}),
+    )
+    vehiculo_marca = forms.CharField(max_length=60, required=False, label="Marca")
+    vehiculo_modelo = forms.CharField(max_length=60, required=False, label="Modelo")
+    vehiculo_anio = forms.IntegerField(min_value=1900, max_value=2100, required=False, label="Año")
+    vehiculo_color = forms.CharField(max_length=40, required=False, label="Color")
+    vehiculo_tipo = forms.ModelChoiceField(
+        queryset=TipoEspacio.objects.all().order_by("nombre"),
+        empty_label="Tipo de vehículo",
+        required=True,
+        label="Tipo",
+    )
+
+    # Orden
+    observaciones = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        label="Observaciones",
+    )
+    entrega_estimada_at = forms.DateTimeField(
+        required=False,
+        label="Entrega estimada",
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        input_formats=["%Y-%m-%dT%H:%M"],
+    )
+
+    def __init__(self, *args, cochera=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cochera = cochera
+        if cochera:
+            self.servicios_qs = Servicio.objects.filter(cochera=cochera, activo=True).order_by("categoria", "nombre")
+        else:
+            self.servicios_qs = Servicio.objects.none()
+
+
+class TurnoForm(forms.ModelForm):
+    class Meta:
+        model = Turno
+        fields = ["fecha", "hora", "duracion_minutos", "operador", "observaciones", "estado"]
+        widgets = {
+            "fecha": forms.DateInput(attrs={"type": "date"}),
+            "hora": forms.TimeInput(attrs={"type": "time"}),
+            "observaciones": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, cochera=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if cochera:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            self.fields["operador"].queryset = User.objects.filter(
+                cocheraempleado__cochera=cochera, cocheraempleado__activo=True
+            ).distinct()
+        self.fields["operador"].required = False
+        self.fields["estado"].initial = Turno.PENDIENTE
+
+
+# ─── Checklist ───────────────────────────────────────────────────────────────
+
+class ChecklistItemForm(forms.ModelForm):
+    class Meta:
+        model = ChecklistItem
+        fields = ["descripcion", "orden", "activo"]
+
+
+# ─── Fotos ───────────────────────────────────────────────────────────────────
+
+class FotoOrdenForm(forms.ModelForm):
+    class Meta:
+        model = FotoOrden
+        fields = ["tipo", "imagen", "descripcion"]
+        widgets = {"descripcion": forms.TextInput(attrs={"placeholder": "Ej: rayón puerta trasera"})}
+
+
+# ─── Inventario ──────────────────────────────────────────────────────────────
+
+class ProductoForm(forms.ModelForm):
+    class Meta:
+        model = Producto
+        fields = ["nombre", "categoria", "descripcion", "unidad", "stock_minimo", "precio_unitario", "activo"]
+        widgets = {"descripcion": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["categoria"].required = False
+
+
+class MovimientoInventarioForm(forms.ModelForm):
+    class Meta:
+        model = MovimientoInventario
+        fields = ["tipo", "cantidad", "motivo"]
+
+    def __init__(self, *args, producto=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.producto = producto
+        self.fields["cantidad"].min_value = 0
+
+    def clean_cantidad(self):
+        cantidad = self.cleaned_data["cantidad"]
+        if cantidad <= 0:
+            raise forms.ValidationError("La cantidad debe ser mayor a 0.")
+        tipo = self.cleaned_data.get("tipo")
+        if tipo == MovimientoInventario.SALIDA and self.producto:
+            if cantidad > self.producto.stock_actual:
+                raise forms.ValidationError(
+                    f"Stock insuficiente. Disponible: {self.producto.stock_actual} {self.producto.unidad}."
+                )
+        return cantidad
+
+
+# ─── Membresías ──────────────────────────────────────────────────────────────
+
+class PlanForm(forms.ModelForm):
+    class Meta:
+        model = Plan
+        fields = ["nombre", "descripcion", "precio_mensual", "lavados_incluidos", "descuento_pct", "activo", "servicios"]
+        widgets = {
+            "descripcion": forms.Textarea(attrs={"rows": 2}),
+            "servicios": forms.CheckboxSelectMultiple(),
+        }
+
+    def __init__(self, *args, cochera=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if cochera:
+            self.fields["servicios"].queryset = Servicio.objects.filter(cochera=cochera, activo=True)
+
+
+class MembresiaForm(forms.ModelForm):
+    class Meta:
+        model = Membresia
+        fields = ["plan", "cliente", "estado", "fecha_inicio", "fecha_vencimiento"]
+        widgets = {
+            "fecha_inicio": forms.DateInput(attrs={"type": "date"}),
+            "fecha_vencimiento": forms.DateInput(attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, cochera=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if cochera:
+            self.fields["plan"].queryset = Plan.objects.filter(cochera=cochera, activo=True)
+            self.fields["cliente"].queryset = Cliente.objects.filter(ordenes__cochera=cochera).distinct()

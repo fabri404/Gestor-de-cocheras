@@ -1,53 +1,39 @@
 {% load static %}
 <!doctype html>
-<html lang="es">
+<html lang="es" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Forin Cars{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ BUSINESS_NAME }}{% endblock %}</title>
 
-  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- FontAwesome (ojito password) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'parking/css/app.css' %}">
 
   {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
+{% if request.user.is_authenticated %}
+  <nav class="navbar navbar-expand-md navbar-dark d-none d-md-flex" style="background: var(--fc-header);">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">{{ BUSINESS_NAME }}</a>
 
-    <a class="navbar-brand fw-bold"
-       href="{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}">
-      Forin Cars
-    </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+              aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
-            aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="nav">
-      <ul class="navbar-nav ms-auto gap-2 align-items-lg-center">
-
-        {% if request.user.is_authenticated %}
-
-          <!-- Rol/usuario -->
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto gap-2 align-items-lg-center">
           <li class="nav-item">
             <span class="badge text-bg-secondary">
               {{ request.user.username }} ·
-              {% if request.user.is_superuser %}
-                Superadmin
-              {% elif can_manage_cochera %}
-                Admin Dueño
-              {% elif can_operate %}
-                Admin Empleado
-              {% else %}
-                Usuario
-              {% endif %}
+              {% if request.user.is_superuser %}Superadmin
+              {% elif can_manage_cochera %}Admin Dueño
+              {% elif can_operate %}Admin Empleado
+              {% else %}Usuario{% endif %}
             </span>
           </li>
 
@@ -61,13 +47,6 @@
             </li>
           {% endif %}
 
-          {% if can_manage_cochera %}
-            <li class="nav-item">
-              <!-- Evita NoReverseMatch: ajustá el path si tu app métricas usa otra URL -->
-              <a class="nav-link" href="/metrics/">Métricas</a>
-            </li>
-          {% endif %}
-
           {% if request.user.is_superuser %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
@@ -75,51 +54,134 @@
           {% endif %}
 
           <li class="nav-item">
+            <button id="themeToggleDesktop" class="btn btn-outline-light btn-sm"
+                    onclick="toggleTheme()" title="Cambiar tema">
+              <i id="themeIconDesktop" class="fa-solid fa-moon"></i>
+            </button>
+          </li>
+
+          <li class="nav-item">
             <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Cerrar sesión</a>
           </li>
-
-        {% else %}
-
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'login' %}">Login</a>
-          </li>
-
-          <li class="nav-item">
-            <a class="btn btn-primary btn-sm" href="{% url 'registro' %}">Registrarse</a>
-          </li>
-
-        {% endif %}
-      </ul>
-    </div>
-  </div>
-</nav>
-
-<!-- Mensajes globales -->
-<div class="container mt-3">
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </ul>
       </div>
-    {% endfor %}
+    </div>
+  </nav>
+{% endif %}
+
+{% block hero %}{% endblock %}
+
+<main class="fc-content">
+
+  {% if messages %}
+    <div class="container pt-3">
+      {% for message in messages %}
+        <div class="fc-alert fc-alert--{{ message.tags|default:'info' }} mb-2">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
   {% endif %}
-</div>
 
-{% block content %}{% endblock %}
+  {% block content %}{% endblock %}
 
-<!-- Bootstrap JS -->
+</main>
+
+{% if request.user.is_authenticated %}
+  <button class="fc-theme-toggle d-md-none" onclick="toggleTheme()" title="Cambiar tema">
+    <i id="themeIconMobile" class="fa-solid fa-moon"></i>
+  </button>
+{% endif %}
+
+{% if request.user.is_authenticated %}
+  {% with active=request.resolver_match.url_name cochera_id=request.resolver_match.kwargs.cochera_id %}
+  <nav class="fc-bottom-nav d-md-none">
+    <a class="fc-bottom-nav-item {% if active == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+      <i class="fa-solid fa-chart-bar"></i>
+      <span>Inicio</span>
+    </a>
+    {% if cochera_id and can_operate %}
+      <a class="fc-bottom-nav-item {% if active == 'orden_new' %}active{% endif %}"
+         href="{% url 'parking:orden_new' cochera_id %}">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Nueva OT</span>
+      </a>
+      <a class="fc-bottom-nav-item {% if active == 'ordenes_list' %}active{% endif %}"
+         href="{% url 'parking:ordenes_list' cochera_id %}">
+        <i class="fa-solid fa-list"></i>
+        <span>Órdenes</span>
+      </a>
+      <a class="fc-bottom-nav-item {% if active == 'turnos_list' or active == 'turno_new' %}active{% endif %}"
+         href="{% url 'parking:turnos_list' cochera_id %}">
+        <i class="fa-solid fa-calendar"></i>
+        <span>Turnos</span>
+      </a>
+      <a class="fc-bottom-nav-item {% if active == 'clientes_list' %}active{% endif %}"
+         href="{% url 'parking:clientes_list' cochera_id %}">
+        <i class="fa-solid fa-users"></i>
+        <span>Clientes</span>
+      </a>
+    {% else %}
+      <a class="fc-bottom-nav-item {% if 'ordenes' in active|default:'' %}active{% endif %}" href="{% url 'parking:ingreso' %}">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Operar</span>
+      </a>
+      <a class="fc-bottom-nav-item" href="{% if can_manage_cochera %}{% url 'parking:cochera_new' %}{% else %}#{% endif %}">
+        <i class="fa-solid fa-warehouse"></i>
+        <span>Local</span>
+      </a>
+      <a class="fc-bottom-nav-item" href="#">
+        <i class="fa-solid fa-spray-can-sparkles"></i>
+        <span>Servicios</span>
+      </a>
+      <a class="fc-bottom-nav-item" href="#">
+        <i class="fa-solid fa-users"></i>
+        <span>Clientes</span>
+      </a>
+    {% endif %}
+  </nav>
+  {% endwith %}
+{% endif %}
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
+  // ── Dark mode ──────────────────────────────────────────────────────────────
+  (function () {
+    const saved = localStorage.getItem("fc-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = saved || (prefersDark ? "dark" : "light");
+    document.documentElement.setAttribute("data-bs-theme", theme);
+  })();
+
+  function _syncIcons(theme) {
+    const icon = theme === "dark" ? "fa-sun" : "fa-moon";
+    ["themeIconDesktop", "themeIconMobile"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = "fa-solid " + icon;
+    });
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-bs-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-bs-theme", next);
+    localStorage.setItem("fc-theme", next);
+    _syncIcons(next);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    _syncIcons(document.documentElement.getAttribute("data-bs-theme"));
+  });
+
+  // ── Password toggle ────────────────────────────────────────────────────────
   function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const icon = document.getElementById("icon-" + inputId);
     if (!input) return;
-
     const isPassword = input.getAttribute("type") === "password";
     input.setAttribute("type", isPassword ? "text" : "password");
-
     if (icon) {
       icon.classList.toggle("fa-eye");
       icon.classList.toggle("fa-eye-slash");

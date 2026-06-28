@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Inventario — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="fc-section-title mb-0">Inventario</h2>
+      <div class="fc-section-sub">{{ cochera.nombre }}</div>
+    </div>
+    {% if can_manage_cochera %}
+      <a class="btn btn-sm" href="{% url 'parking:producto_new' cochera.id %}"
+         style="background:var(--fc-blue);color:#fff;border-radius:12px;">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo producto
+      </a>
+    {% endif %}
+  </div>
+
+  {% if bajo_stock %}
+    <div class="fc-alert fc-alert--warning mb-3">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span><strong>{{ bajo_stock|length }} producto(s) bajo stock mínimo:</strong>
+        {% for p in bajo_stock %}{{ p.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      </span>
+    </div>
+  {% endif %}
+
+  {% if productos %}
+    {% regroup productos by categoria as grupos %}
+    {% for grupo in grupos %}
+      <h5 class="fw-semibold mt-4 mb-2" style="color:var(--fc-text-muted);">
+        {{ grupo.grouper.nombre|default:"Sin categoría" }}
+      </h5>
+      <div class="fc-card p-0 mb-3">
+        {% for p in grupo.list %}
+          <div class="fc-zone-row d-flex align-items-center gap-3 {% if not p.activo %}opacity-50{% endif %}">
+            <div class="fc-icon-badge fc-icon-badge--{% if p.bajo_stock %}orange{% else %}green{% endif %}">
+              <i class="fa-solid fa-{% if p.bajo_stock %}triangle-exclamation{% else %}box{% endif %}"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">{{ p.nombre }}</span>
+                <span class="fw-bold {% if p.bajo_stock %}text-danger{% endif %}">
+                  {{ p.stock_actual }} {{ p.unidad }}
+                </span>
+              </div>
+              <div class="fc-section-sub">
+                Mín: {{ p.stock_minimo }} {{ p.unidad }}
+                {% if p.precio_unitario %} · ${{ p.precio_unitario }}/{{ p.unidad }}{% endif %}
+                {% if not p.activo %} · <span class="text-danger">Inactivo</span>{% endif %}
+              </div>
+            </div>
+            <div class="d-flex gap-1">
+              <a href="{% url 'parking:producto_movimiento' cochera.id p.id %}"
+                 class="btn btn-sm btn-outline-primary" title="Registrar movimiento">
+                <i class="fa-solid fa-arrows-up-down"></i>
+              </a>
+              {% if can_manage_cochera %}
+                <a href="{% url 'parking:producto_edit' cochera.id p.id %}"
+                   class="btn btn-sm btn-outline-secondary" title="Editar">
+                  <i class="fa-solid fa-pen"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="fc-card p-4 text-center">
+      <div class="fc-icon-badge fc-icon-badge--blue mx-auto mb-3"><i class="fa-solid fa-box"></i></div>
+      <h3 class="fc-section-title mb-1">Sin productos</h3>
+      <div class="fc-section-sub mb-3">Cargá los productos del inventario para hacer seguimiento de stock.</div>
+      {% if can_manage_cochera %}
+        <a class="fc-action-btn fc-action-btn--primary" href="{% url 'parking:producto_new' cochera.id %}">
+          <i class="fa-solid fa-plus"></i> Agregar producto
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-chevron-left me-1"></i> Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

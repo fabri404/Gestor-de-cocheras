@@ -1,0 +1,30 @@
+# ─── Secrets y configs locales ───────────────────────────────────────────────
+.env
+.env.parking-*
+
+# ─── Base de datos local ─────────────────────────────────────────────────────
+db.sqlite3
+*.sqlite3
+
+# ─── Static compilados (se regeneran en entrypoint) ──────────────────────────
+staticfiles/
+
+# ─── Python bytecode ─────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ─── Tests (no van a prod) ────────────────────────────────────────────────────
+tests/
+test_*.py
+
+# ─── Docs / meta ─────────────────────────────────────────────────────────────
+*.md
+Dockerfile
+.dockerignore
+.gitignore

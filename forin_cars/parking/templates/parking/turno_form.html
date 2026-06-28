@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Turno — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3" style="max-width:520px;">
+
+  <a href="{% url 'parking:turnos_list' cochera.id %}" class="btn btn-sm btn-outline-secondary mb-3">
+    <i class="fa-solid fa-chevron-left me-1"></i> Turnos
+  </a>
+  <h2 class="fc-section-title mb-1">Nuevo Turno</h2>
+  <div class="fc-section-sub mb-3">{{ cochera.nombre }}</div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="fc-card p-3 mb-3">
+      <h5 class="fw-semibold mb-3"><i class="fa-solid fa-car me-2"></i>Vehículo</h5>
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label">Patente *</label>
+          <input type="text" name="vehiculo_patente" class="form-control text-uppercase"
+                 required maxlength="10" placeholder="ABC123">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Tipo *</label>
+          <select name="vehiculo_tipo" class="form-select" required>
+            <option value="">— Tipo —</option>
+            {% for t in tipos %}
+              <option value="{{ t.id }}">{{ t.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Nombre del cliente</label>
+          <input type="text" name="cliente_nombre" class="form-control" placeholder="Juan García">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="cliente_telefono" class="form-control" placeholder="11 1234-5678">
+        </div>
+      </div>
+    </div>
+
+    <div class="fc-card p-3 mb-4">
+      <h5 class="fw-semibold mb-3"><i class="fa-solid fa-calendar me-2"></i>Horario</h5>
+      <div class="row g-2">
+        {% for field in form %}
+          <div class="col-{% if field.name == 'observaciones' %}12{% else %}6{% endif %}">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="text-danger small">{{ field.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+      <button type="submit" class="btn btn-primary flex-grow-1">
+        <i class="fa-solid fa-calendar-plus me-1"></i> Agendar turno
+      </button>
+      <a href="{% url 'parking:turnos_list' cochera.id %}" class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

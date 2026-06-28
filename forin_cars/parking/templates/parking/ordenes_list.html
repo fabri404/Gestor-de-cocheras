@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Órdenes de Trabajo — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="fc-section-title mb-0">Órdenes de Trabajo</h2>
+      <div class="fc-section-sub">{{ cochera.nombre }}</div>
+    </div>
+    {% if can_operate %}
+      <a class="btn btn-sm" href="{% url 'parking:orden_new' cochera.id %}"
+         style="background:var(--fc-blue);color:#fff;border-radius:12px;">
+        <i class="fa-solid fa-plus me-1"></i> Nueva OT
+      </a>
+    {% endif %}
+  </div>
+
+  {% if not estado_filtro %}
+    <div class="row g-2 mb-3">
+      {% for key, label in estados %}
+        <div class="col-6 col-md-3">
+          <a href="?estado={{ key }}" class="fc-card p-2 d-block text-decoration-none text-center">
+            <div class="fw-bold fs-5">
+              {% if key == 'PENDIENTE' %}{{ totales.PENDIENTE }}
+              {% elif key == 'EN_PROCESO' %}{{ totales.EN_PROCESO }}
+              {% elif key == 'FINALIZADO' %}{{ totales.FINALIZADO }}
+              {% else %}{{ totales.CANCELADO }}{% endif %}
+            </div>
+            <div class="fc-section-sub">{{ label }}</div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="mb-3">
+      <a href="{% url 'parking:ordenes_list' cochera.id %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fa-solid fa-xmark me-1"></i> Quitar filtro ({{ estado_filtro }})
+      </a>
+    </div>
+  {% endif %}
+
+  {% if ordenes %}
+    <div class="fc-card p-0">
+      {% for o in ordenes %}
+        <a href="{% url 'parking:orden_detail' cochera.id o.id %}"
+           class="fc-zone-row d-flex align-items-center gap-3 text-decoration-none">
+          <div class="fc-icon-badge fc-icon-badge--{% if o.estado == 'FINALIZADO' %}green{% elif o.estado == 'EN_PROCESO' %}blue{% elif o.estado == 'CANCELADO' %}orange{% else %}purple{% endif %}">
+            <i class="fa-solid fa-clipboard-list"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fw-semibold" style="color:var(--fc-text);">
+                {{ o.numero }} — {{ o.vehiculo.patente|default:o.vehiculo.patente_ult3|default:"?" }}
+              </span>
+              <span class="fw-bold">${{ o.monto_total }}</span>
+            </div>
+            <div class="fc-section-sub text-truncate">
+              {{ o.cliente.nombre_completo }} · {{ o.created_at|date:"d/m/Y H:i" }}
+              · <span class="fw-semibold">{{ o.get_estado_display }}</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--fc-text-muted);"></i>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fc-card p-4 text-center">
+      <div class="fc-icon-badge fc-icon-badge--blue mx-auto mb-3"><i class="fa-solid fa-clipboard-list"></i></div>
+      <h3 class="fc-section-title mb-1">Sin órdenes</h3>
+      <div class="fc-section-sub mb-3">Creá la primera orden de trabajo para este local.</div>
+      {% if can_operate %}
+        <a class="fc-action-btn fc-action-btn--primary" href="{% url 'parking:orden_new' cochera.id %}">
+          <i class="fa-solid fa-plus"></i> Nueva orden
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-chevron-left me-1"></i> Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

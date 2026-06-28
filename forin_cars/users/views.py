@@ -5,12 +5,13 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
-from django.db.models import Q
+from django.db.models import Q, Sum, Count, Avg, F
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils import timezone
 
 from .forms import RegistroForm
-from parking.models import Cochera, Movimiento
+from parking.models import Cochera, Movimiento, OrdenTrabajo, OrdenServicio, Servicio, Producto
 
 
 def login_view(request):
@@ -86,13 +87,13 @@ def dashboard_view(request):
     cocheras_data = []
 
     for c in cocheras:
-        # Totales por tipo según ConfigCapacidad (lo que “debería haber”)
+        # Totales por tipo según ConfigCapacidad (lo que "debería haber")
         caps = list(c.capacidades.all())
 
         total_por_tipo = {cap.tipo_id: cap.cantidad for cap in caps}
         tipo_obj = {cap.tipo_id: cap.tipo for cap in caps}
 
-        # Ocupados reales según Espacios (lo que “hay ocupado”)
+        # Ocupados reales según Espacios (lo que "hay ocupado")
         espacios = list(c.espacios.all())
         ocupados_por_tipo = defaultdict(int)
         for e in espacios:
@@ -162,32 +163,81 @@ def dashboard_view(request):
         .order_by("-ingreso_at")[:10]
     )
 
-    # ⚠️ “Monto total”: hoy no existe un campo monto/facturación en Movimiento ni en services,
-    # así que te dejo placeholder hasta que metas Tarifa/Pago.
-    total_facturado = None
+    # ── KPIs de órdenes de trabajo ────────────────────────────────────────────
+    hoy = timezone.localdate()
+    inicio_mes = hoy.replace(day=1)
+
+    ordenes_qs = OrdenTrabajo.objects.filter(cochera__in=cocheras)
+    ordenes_hoy = ordenes_qs.filter(created_at__date=hoy).count()
+    ordenes_pendientes = ordenes_qs.filter(estado=OrdenTrabajo.PENDIENTE).count()
+    ordenes_en_proceso = ordenes_qs.filter(estado=OrdenTrabajo.EN_PROCESO).count()
+
+    facturado_hoy = (
+        ordenes_qs.filter(estado=OrdenTrabajo.FINALIZADO, entregado_at__date=hoy)
+        .aggregate(t=Sum("monto_total"))["t"] or 0
+    )
+    facturado_mes = (
+        ordenes_qs.filter(estado=OrdenTrabajo.FINALIZADO, entregado_at__date__gte=inicio_mes)
+        .aggregate(t=Sum("monto_total"))["t"] or 0
+    )
+    ticket_promedio = (
+        ordenes_qs.filter(estado=OrdenTrabajo.FINALIZADO)
+        .aggregate(p=Avg("monto_total"))["p"] or 0
+    )
+
+    top_servicios = (
+        OrdenServicio.objects.filter(orden__cochera__in=cocheras)
+        .values("servicio__nombre")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:5]
+    )
+
+    bajo_stock_count = Producto.objects.filter(
+        cochera__in=cocheras, activo=True, stock_actual__lte=F("stock_minimo")
+    ).count()
+
+    ultimas_ordenes = (
+        ordenes_qs.select_related("cochera", "cliente", "vehiculo")
+        .order_by("-created_at")[:8]
+    )
+
+    ultimos = (
+        Movimiento.objects.filter(cochera__in=cocheras)
+        .select_related("cochera", "vehiculo", "vehiculo__tipo", "espacio", "espacio__tipo")
+        .order_by("-ingreso_at")[:5]
+    )
 
     ctx = {
         "cocheras": cocheras,
         "cocheras_data": cocheras_data,
 
-        # métricas (mantenidas)
+        # parking
         "total_espacios": total_espacios,
         "ocupados": ocupados,
         "libres": libres,
         "mov_abiertos": mov_abiertos,
         "ocupacion_pct": ocupacion_pct,
         "ultimos": ultimos,
-
-        # detalle global por tipo
         "totales_por_tipo": totales_por_tipo_list,
+
+        # KPIs lavadero
+        "ordenes_hoy": ordenes_hoy,
+        "ordenes_pendientes": ordenes_pendientes,
+        "ordenes_en_proceso": ordenes_en_proceso,
+        "facturado_hoy": facturado_hoy,
+        "facturado_mes": facturado_mes,
+        "ticket_promedio": round(ticket_promedio, 2),
+        "top_servicios": top_servicios,
+        "bajo_stock_count": bajo_stock_count,
+        "ultimas_ordenes": ultimas_ordenes,
 
         # roles
         "is_superadmin": is_superadmin,
         "can_manage_cochera": can_manage_cochera,
         "can_operate": can_operate,
 
-        # placeholder monetario
-        "total_facturado": total_facturado,
+        # legacy placeholder
+        "total_facturado": facturado_hoy,
     }
     return render(request, "users/dashboard.html", ctx)
 

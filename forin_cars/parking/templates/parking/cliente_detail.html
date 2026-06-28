@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ cliente.nombre_completo }} — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  <div class="mb-3">
+    <a href="{% url 'parking:clientes_list' cochera.id %}" class="btn btn-sm btn-outline-secondary mb-2">
+      <i class="fa-solid fa-chevron-left me-1"></i> Clientes
+    </a>
+
+    <div class="fc-card p-3 mb-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="fc-icon-badge fc-icon-badge--{% if cliente.es_vip %}orange{% else %}blue{% endif %}" style="width:48px;height:48px;font-size:1.2rem;">
+          <i class="fa-solid fa-user{% if cliente.es_vip %}-tie{% endif %}"></i>
+        </div>
+        <div>
+          <h3 class="fc-section-title mb-0">
+            {{ cliente.nombre_completo }}
+            {% if cliente.es_vip %}<span class="badge bg-warning text-dark ms-1">VIP</span>{% endif %}
+          </h3>
+          <div class="fc-section-sub">
+            {% if cliente.telefono %}<i class="fa-solid fa-phone me-1"></i>{{ cliente.telefono }} &nbsp;{% endif %}
+            {% if cliente.email %}<i class="fa-solid fa-envelope me-1"></i>{{ cliente.email }}{% endif %}
+          </div>
+          {% if cliente.observaciones %}
+            <div class="fc-section-sub mt-1">{{ cliente.observaciones }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if vehiculos %}
+    <h5 class="fc-section-title mb-2">Vehículos</h5>
+    <div class="fc-card p-0 mb-4">
+      {% for v in vehiculos %}
+        <div class="fc-zone-row d-flex align-items-center gap-3">
+          <div class="fc-icon-badge fc-icon-badge--green"><i class="fa-solid fa-car"></i></div>
+          <div>
+            <div class="fw-semibold">{{ v.patente|default:v.patente_ult3|default:"Sin patente" }}</div>
+            <div class="fc-section-sub">
+              {% if v.marca %}{{ v.marca }} {{ v.modelo }}{% endif %}
+              {% if v.color %} · {{ v.color }}{% endif %}
+              {% if v.anio %} · {{ v.anio }}{% endif %}
+              · {{ v.tipo.nombre }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h5 class="fc-section-title mb-0">Historial de Órdenes</h5>
+    <a href="{% url 'parking:orden_new' cochera.id %}?patente={{ vehiculos.0.patente }}"
+       class="btn btn-sm btn-primary">
+      <i class="fa-solid fa-plus me-1"></i> Nueva OT
+    </a>
+  </div>
+
+  {% if ordenes %}
+    <div class="fc-card p-0 mb-4">
+      {% for o in ordenes %}
+        <a href="{% url 'parking:orden_detail' cochera.id o.id %}"
+           class="fc-zone-row d-flex align-items-center gap-3 text-decoration-none">
+          <div class="fc-icon-badge fc-icon-badge--{% if o.estado == 'FINALIZADO' %}green{% elif o.estado == 'EN_PROCESO' %}blue{% elif o.estado == 'CANCELADO' %}orange{% else %}purple{% endif %}">
+            <i class="fa-solid fa-clipboard-list"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fw-semibold" style="color:var(--fc-text);">{{ o.numero }}</span>
+              <span class="fw-bold">${{ o.monto_total }}</span>
+            </div>
+            <div class="fc-section-sub text-truncate">
+              {{ o.created_at|date:"d/m/Y" }} · {{ o.get_estado_display }}
+              {% for os in o.ordenservicio_set.all %} · {{ os.servicio.nombre }}{% endfor %}
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--fc-text-muted);"></i>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fc-card p-3 text-center fc-section-sub">Sin órdenes de trabajo registradas.</div>
+  {% endif %}
+
+</div>
+{% endblock %}

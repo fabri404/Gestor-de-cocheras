@@ -1,0 +1,35 @@
+# ─── Entornos virtuales ───────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ─── Secrets y entornos por instancia ────────────────────────────────────────
+forin_cars/.env
+forin_cars/.env.parking-*
+# Mantener el template commiteado:
+!forin_cars/.env.example
+
+# ─── Base de datos SQLite (dev local) ────────────────────────────────────────
+forin_cars/db.sqlite3
+forin_cars/*.sqlite3
+
+# ─── Static files compilados ─────────────────────────────────────────────────
+forin_cars/staticfiles/
+
+# ─── Python bytecode ─────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.ruff_cache/
+
+# ─── Backups (generados por scripts/backup.sh) ───────────────────────────────
+backups/
+
+# ─── Dev override (contiene mounts locales, no commitear) ────────────────────
+docker-compose.override.yml
+
+# ─── Editors / OS ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+.DS_Store

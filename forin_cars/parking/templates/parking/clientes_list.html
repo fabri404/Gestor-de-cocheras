@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Clientes — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="fc-section-title mb-0">Clientes</h2>
+      <div class="fc-section-sub">{{ cochera.nombre }} · {{ clientes_data|length }} cliente(s)</div>
+    </div>
+    <a href="{% url 'parking:cochera_live' cochera.id %}"
+       class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-tower-broadcast me-1"></i>Panel
+    </a>
+  </div>
+
+  {# Búsqueda + filtros #}
+  <form method="get" class="mb-3">
+    <div class="input-group mb-2">
+      <input type="search" name="q" value="{{ q }}" class="form-control"
+             placeholder="Buscar por nombre, teléfono, email…">
+      <input type="hidden" name="filtro" value="{{ filtro }}">
+      <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% for val, label in filtros %}
+        <a href="?filtro={{ val }}{% if q %}&q={{ q }}{% endif %}"
+           class="btn btn-sm {% if filtro == val %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+           style="border-radius:20px;">
+          {{ label }}
+        </a>
+      {% endfor %}
+    </div>
+  </form>
+
+  {% if clientes_data %}
+    <div class="fc-card p-0">
+      {% for item in clientes_data %}
+        {% with c=item.cliente m=item.membresia %}
+        <a href="{% url 'parking:cliente_detail' cochera.id c.id %}"
+           class="fc-zone-row d-flex align-items-center gap-3 text-decoration-none px-3">
+          <div class="fc-icon-badge fc-icon-badge--{% if m %}purple{% elif c.es_vip %}orange{% else %}blue{% endif %}">
+            <i class="fa-solid fa-{% if m %}star{% elif c.es_vip %}user-tie{% else %}user{% endif %}"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+              <span class="fw-semibold" style="color:var(--fc-text);">
+                {{ c.nombre_completo }}
+              </span>
+              <div class="d-flex gap-1 flex-shrink-0">
+                {% if c.es_vip %}
+                  <span class="badge bg-warning text-dark" style="font-size:.65rem;">VIP</span>
+                {% endif %}
+                {% if m %}
+                  <span class="badge rounded-pill" style="background:rgba(168,85,247,.15);color:var(--fc-purple);font-size:.65rem;">
+                    <i class="fa-solid fa-star me-1"></i>{{ m.plan.nombre }}
+                  </span>
+                {% else %}
+                  <span class="badge rounded-pill" style="background:rgba(59,130,246,.1);color:var(--fc-blue);font-size:.65rem;">
+                    <i class="fa-solid fa-clock me-1"></i>Por hora
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="fc-section-sub text-truncate">
+              {% if c.telefono %}{{ c.telefono }}{% endif %}
+              {% if c.email %} · {{ c.email }}{% endif %}
+              {% if m %} · Vence {{ m.fecha_vencimiento|date:"d/m/Y" }}{% endif %}
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right fc-section-sub"></i>
+        </a>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fc-card p-4 text-center">
+      <div class="fc-icon-badge fc-icon-badge--blue mx-auto mb-3"><i class="fa-solid fa-users"></i></div>
+      <h3 class="fc-section-title mb-1">Sin clientes</h3>
+      <div class="fc-section-sub">
+        {% if filtro != 'todos' %}Ningún cliente coincide con este filtro.
+        {% else %}Los clientes aparecen aquí cuando tienen movimientos u órdenes.{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-chevron-left me-1"></i> Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

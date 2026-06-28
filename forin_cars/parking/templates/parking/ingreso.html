@@ -2,206 +2,240 @@
 {% block title %}Ingreso{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container px-3 px-md-0 pt-3" style="max-width: 640px;">
 
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <div>
-      <h2 class="m-0">Ingreso de vehículo</h2>
-      {% if public_mode %}
-        <div class="text-muted small">Cochera: <strong>{{ cochera.nombre }}</strong></div>
-      {% endif %}
+      <h1 class="fc-section-title" style="font-size:1.35rem;">Ingreso de vehículo</h1>
+      <div class="fc-section-sub">Cochera: <strong>{{ cochera.nombre }}</strong></div>
     </div>
-
     {% if request.user.is_authenticated %}
-      <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Volver</a>
+      <a class="btn btn-sm" href="{% url 'dashboard' %}"
+         style="background:var(--fc-border);color:var(--fc-text);border-radius:10px;">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
     {% endif %}
   </div>
 
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-4">
-
-      {% if not tipos %}
-        <div class="alert alert-warning">
-          No hay tipos de vehículo cargados. Cargalos (Auto/Moto/Camioneta/etc) para poder ingresar vehículos.
-        </div>
-      {% endif %}
-
-      {% if public_mode %}
-        <div class="alert alert-info">
-          Estás cargando un ingreso de forma pública. Completá los datos y confirmá.
-        </div>
-      {% endif %}
-
-      <form method="post" novalidate>
-        {% csrf_token %}
-
-        <div class="mb-3">
-          <label class="form-label">Tipo de vehículo <span class="text-danger">*</span></label>
-          <select name="tipo_id" class="form-select" required {% if not tipos %}disabled{% endif %}>
-            <option value="">-- Seleccionar --</option>
-            {% for t in tipos %}
-              <option value="{{ t.id }}">{{ t.nombre }}</option>
-            {% endfor %}
-          </select>
-          <div class="form-text">Debe coincidir con los tipos configurados en la cochera.</div>
-        </div>
-
-        <!-- NUEVO: horas + tarifa por hora + total + salida estimada -->
-        <div class="mb-3">
-          <label class="form-label">Horas a permanecer <span class="text-danger">*</span></label>
-          <input
-            type="number"
-            name="horas"
-            id="id_horas"
-            class="form-control"
-            min="1"
-            step="1"
-            value="1"
-            required
-          >
-          <div class="form-text">Se usa para calcular el total estimado.</div>
-        </div>
-
-        <div class="row g-2 mb-3">
-          <div class="col-md-4">
-            <div class="border rounded-3 p-3 bg-light">
-              <div class="small text-muted">Tarifa por hora</div>
-              <div class="fs-5 fw-semibold" id="tarifa_hora_text">—</div>
-              <div class="small text-danger mt-1 d-none" id="tarifa_warning">
-                No hay tarifa configurada para este tipo.
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-4">
-            <div class="border rounded-3 p-3 bg-light">
-              <div class="small text-muted">Total estimado</div>
-              <div class="fs-5 fw-semibold" id="total_text">—</div>
-            </div>
-          </div>
-
-          <div class="col-md-4">
-            <div class="border rounded-3 p-3 bg-light">
-              <div class="small text-muted">Salida estimada</div>
-              <div class="fs-5 fw-semibold" id="salida_text">—</div>
-            </div>
-          </div>
-        </div>
-        <!-- /NUEVO -->
-
-        {% if public_mode %}
-          <!-- ticket autogenerado -->
-          <input type="hidden" name="ticket" value="{{ ticket_prefill }}">
-          <div class="mb-3">
-            <label class="form-label">Ticket</label>
-            <input class="form-control" value="{{ ticket_prefill }}" readonly>
-            <div class="form-text">Se genera automáticamente.</div>
-          </div>
-        {% else %}
-          <div class="mb-3">
-            <label class="form-label">Ticket</label>
-            <input class="form-control" value="Se generará automáticamente al guardar" disabled>
-            <div class="form-text">El sistema genera un ticket único.</div>
-          </div>
-        {% endif %}
-
-        <div class="mb-3">
-          <label class="form-label">Patente (últimos 3) (opcional)</label>
-          <input name="patente_ult3"
-                 class="form-control"
-                 placeholder="Ej: ABC"
-                 maxlength="3"
-                 pattern=".{0}|.{3}">
-          <div class="form-text">Si cargás algo, deben ser exactamente 3 caracteres. Si no, dejalo vacío.</div>
-        </div>
-
-        <hr class="my-4">
-
-        <h5 class="mb-3">Datos del cliente (opcionales)</h5>
-        <div class="row g-2">
-          <div class="col-md-6">
-            <input name="nombre" class="form-control" placeholder="Nombre">
-          </div>
-          <div class="col-md-6">
-            <input name="apellido" class="form-control" placeholder="Apellido">
-          </div>
-          <div class="col-md-6">
-            <input name="telefono" class="form-control" placeholder="Teléfono">
-          </div>
-          <div class="col-md-6">
-            <input name="email" class="form-control" placeholder="Email">
-          </div>
-        </div>
-
-        <div class="mt-4 d-flex gap-2">
-          <button class="btn btn-primary" type="submit" {% if not tipos %}disabled{% endif %}>Ingresar</button>
-
-          {% if request.user.is_authenticated %}
-            <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Cancelar</a>
-          {% endif %}
-        </div>
-
-        <!-- NUEVO: JSON tarifas + JS cálculo -->
-        <script id="tarifas-data" type="application/json">
-          {{ tarifas_json|default:"{}"|safe }}
-        </script>
-
-        <script>
-        (() => {
-          const tarifas = JSON.parse(document.getElementById("tarifas-data").textContent || "{}");
-
-          const tipoSel   = document.querySelector('select[name="tipo_id"]');
-          const horasInp  = document.getElementById("id_horas");
-          const tarifaEl  = document.getElementById("tarifa_hora_text");
-          const totalEl   = document.getElementById("total_text");
-          const salidaEl  = document.getElementById("salida_text");
-          const warnEl    = document.getElementById("tarifa_warning");
-          const submitBtn = document.querySelector('button[type="submit"]');
-
-          function money(n) {
-            if (n === null || Number.isNaN(n)) return "—";
-            return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(n);
-          }
-
-          function update() {
-            const tipoId = (tipoSel && tipoSel.value) ? tipoSel.value : null;
-            const horas = parseInt(horasInp.value || "0", 10);
-
-            const tarifaRaw = tipoId ? tarifas[tipoId] : null;
-            const tarifa = (tarifaRaw != null) ? parseFloat(String(tarifaRaw).replace(",", ".")) : NaN;
-
-            const hasTipo = !!tipoId;
-            const hasTarifa = Number.isFinite(tarifa);
-
-            tarifaEl.textContent = hasTarifa ? money(tarifa) : "—";
-
-            // warning + bloquear submit si eligen tipo sin tarifa
-            if (warnEl) warnEl.classList.toggle("d-none", !hasTipo || hasTarifa);
-            if (submitBtn) submitBtn.disabled = (!hasTipo || !hasTarifa || !(horas > 0));
-
-            const total = (hasTarifa && horas > 0) ? tarifa * horas : NaN;
-            totalEl.textContent = money(total);
-
-            if (horas > 0) {
-              const d = new Date();
-              d.setHours(d.getHours() + horas);
-              salidaEl.textContent = d.toLocaleString("es-AR");
-            } else {
-              salidaEl.textContent = "—";
-            }
-          }
-
-          if (tipoSel)  tipoSel.addEventListener("change", update);
-          if (horasInp) horasInp.addEventListener("input", update);
-          update();
-        })();
-        </script>
-        <!-- /NUEVO -->
-
-      </form>
-
+  {% if not tipos %}
+    <div class="fc-alert fc-alert--warning mb-3">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>No hay tipos de vehículo cargados. Cargalos (Auto/Moto/Camioneta/etc) para poder ingresar vehículos.</span>
     </div>
-  </div>
+  {% endif %}
+
+  {% if public_mode %}
+    <div class="fc-alert fc-alert--info mb-3">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>Estás cargando un ingreso de forma pública. Completá los datos y confirmá.</span>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {# ===== Tipo y tiempo ===== #}
+    <div class="fc-form-section">
+      <h2 class="fc-section-title mb-3">Tipo y tiempo</h2>
+
+      <div class="mb-3">
+        <label class="fc-label">Tipo de vehículo <span class="text-danger">*</span></label>
+        <select name="tipo_id" class="fc-input" required {% if not tipos %}disabled{% endif %}>
+          <option value="">-- Seleccionar --</option>
+          {% for t in tipos %}
+            <option value="{{ t.id }}">{{ t.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="fc-label">Horas a permanecer <span class="text-danger">*</span></label>
+        <input type="number" name="horas" id="id_horas" class="fc-input"
+               min="1" step="1" value="1" required>
+      </div>
+    </div>
+
+    {# ===== Resumen ===== #}
+    <div class="fc-form-section">
+      <h2 class="fc-section-title mb-3">Resumen estimado</h2>
+      <div class="row g-2">
+        <div class="col-12 col-sm-4">
+          <div class="p-3 text-center" style="background:var(--fc-bg);border-radius:var(--fc-radius-sm);">
+            <div class="fc-section-sub">Tarifa por hora</div>
+            <div class="fw-bold mt-1" style="font-size:1.1rem;" id="tarifa_hora_text">—</div>
+            <div class="small text-danger mt-1 d-none" id="tarifa_warning">Sin tarifa configurada.</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-4">
+          <div class="p-3 text-center" style="background:rgba(34,197,94,.10);border-radius:var(--fc-radius-sm);">
+            <div class="fc-section-sub">Total estimado</div>
+            <div class="fw-bold mt-1" style="font-size:1.1rem;color:var(--fc-green);" id="total_text">—</div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-4">
+          <div class="p-3 text-center" style="background:var(--fc-bg);border-radius:var(--fc-radius-sm);">
+            <div class="fc-section-sub">Salida estimada</div>
+            <div class="fw-bold mt-1" style="font-size:.95rem;" id="salida_text">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ===== Modalidad de pago ===== #}
+    <div class="fc-form-section" id="pago_section">
+      <h2 class="fc-section-title mb-3">Modalidad de pago</h2>
+
+      <div class="d-flex gap-3 mb-3">
+        <label class="d-flex align-items-center gap-2 cursor-pointer">
+          <input type="radio" name="tipo_pago" value="HORA" id="pago_hora" checked
+                 onchange="onTipoPagoChange()">
+          <span class="fw-semibold">Por hora</span>
+        </label>
+        {% if membresias_activas %}
+          <label class="d-flex align-items-center gap-2 cursor-pointer">
+            <input type="radio" name="tipo_pago" value="MEMBRESIA" id="pago_membresia"
+                   onchange="onTipoPagoChange()">
+            <span class="fw-semibold" style="color:var(--fc-purple);">
+              <i class="fa-solid fa-star me-1"></i>Membresía
+            </span>
+          </label>
+        {% endif %}
+      </div>
+
+      <div id="membresia_select" class="d-none">
+        <label class="fc-label">Seleccioná la membresía</label>
+        <select name="membresia_id" class="fc-input">
+          <option value="">-- Elegir membresía --</option>
+          {% for m in membresias_activas %}
+            <option value="{{ m.id }}">
+              {{ m.cliente.nombre_completo }} — {{ m.plan.nombre }}
+              {% if m.plan.lavados_incluidos %}({{ m.lavados_restantes }} restantes){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    {# ===== Ticket y patente ===== #}
+    <div class="fc-form-section">
+      <div class="mb-3">
+        <label class="fc-label">Ticket</label>
+        {% if public_mode %}
+          <input type="hidden" name="ticket" value="{{ ticket_prefill }}">
+          <input class="fc-input" value="{{ ticket_prefill }}" readonly>
+          <div class="fc-section-sub mt-1">Se genera automáticamente.</div>
+        {% else %}
+          <input class="fc-input" value="Se generará automáticamente al guardar" disabled>
+          <div class="fc-section-sub mt-1">El sistema genera un ticket único.</div>
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="fc-label">Patente (últimos 3) — opcional</label>
+        <input name="patente_ult3" class="fc-input" placeholder="Ej: ABC"
+               maxlength="3" pattern=".{0}|.{3}">
+        <div class="fc-section-sub mt-1">Si cargás algo, deben ser exactamente 3 caracteres.</div>
+      </div>
+    </div>
+
+    {# ===== Cliente (colapsable) ===== #}
+    <div class="fc-form-section">
+      <button class="btn p-0 d-flex align-items-center justify-content-between w-100 border-0 bg-transparent"
+              type="button" data-bs-toggle="collapse" data-bs-target="#clienteCollapse"
+              aria-expanded="false" aria-controls="clienteCollapse">
+        <span class="fc-section-title">Datos del cliente (opcional)</span>
+        <i class="fa-solid fa-chevron-down" style="color:var(--fc-muted);"></i>
+      </button>
+      <div class="collapse mt-3" id="clienteCollapse">
+        <div class="row g-2">
+          <div class="col-12 col-sm-6"><input name="nombre" class="fc-input" placeholder="Nombre"></div>
+          <div class="col-12 col-sm-6"><input name="apellido" class="fc-input" placeholder="Apellido"></div>
+          <div class="col-12 col-sm-6"><input name="telefono" class="fc-input" placeholder="Teléfono"></div>
+          <div class="col-12 col-sm-6"><input name="email" class="fc-input" placeholder="Email"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fc-action-btn fc-action-btn--success" type="submit" {% if not tipos %}disabled{% endif %}>
+      <i class="fa-solid fa-arrow-right-to-bracket"></i> Ingresar
+    </button>
+
+    {% if request.user.is_authenticated %}
+      <a class="d-block text-center mt-3 text-decoration-none fc-section-sub" href="{% url 'dashboard' %}">Cancelar</a>
+    {% endif %}
+
+    <!-- NUEVO: JSON tarifas + JS cálculo -->
+    <script id="tarifas-data" type="application/json">
+      {{ tarifas_json|default:"{}"|safe }}
+    </script>
+
+    <script>
+    (() => {
+      const tarifas = JSON.parse(document.getElementById("tarifas-data").textContent || "{}");
+
+      const tipoSel   = document.querySelector('select[name="tipo_id"]');
+      const horasInp  = document.getElementById("id_horas");
+      const tarifaEl  = document.getElementById("tarifa_hora_text");
+      const totalEl   = document.getElementById("total_text");
+      const salidaEl  = document.getElementById("salida_text");
+      const warnEl    = document.getElementById("tarifa_warning");
+      const submitBtn = document.querySelector('button[type="submit"]');
+
+      function money(n) {
+        if (n === null || Number.isNaN(n)) return "—";
+        return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(n);
+      }
+
+      function update() {
+        const tipoId = (tipoSel && tipoSel.value) ? tipoSel.value : null;
+        const horas = parseInt(horasInp.value || "0", 10);
+
+        const tarifaRaw = tipoId ? tarifas[tipoId] : null;
+        const tarifa = (tarifaRaw != null) ? parseFloat(String(tarifaRaw).replace(",", ".")) : NaN;
+
+        const hasTipo = !!tipoId;
+        const hasTarifa = Number.isFinite(tarifa);
+
+        tarifaEl.textContent = hasTarifa ? money(tarifa) : "—";
+
+        // warning + bloquear submit si eligen tipo sin tarifa
+        if (warnEl) warnEl.classList.toggle("d-none", !hasTipo || hasTarifa);
+        if (submitBtn) submitBtn.disabled = (!hasTipo || !hasTarifa || !(horas > 0));
+
+        const total = (hasTarifa && horas > 0) ? tarifa * horas : NaN;
+        totalEl.textContent = money(total);
+
+        if (horas > 0) {
+          const d = new Date();
+          d.setHours(d.getHours() + horas);
+          salidaEl.textContent = d.toLocaleString("es-AR");
+        } else {
+          salidaEl.textContent = "—";
+        }
+      }
+
+      if (tipoSel)  tipoSel.addEventListener("change", update);
+      if (horasInp) horasInp.addEventListener("input", update);
+      update();
+    })();
+
+    function onTipoPagoChange() {
+      const esMembresia = document.getElementById("pago_membresia")?.checked;
+      const memSel = document.getElementById("membresia_select");
+      const resumen = document.querySelector(".fc-form-section:nth-of-type(2)"); // resumen estimado
+      if (memSel) memSel.classList.toggle("d-none", !esMembresia);
+      // Ocultar resumen de costo si es membresía
+      const totalEl = document.getElementById("total_text");
+      const tarifaEl = document.getElementById("tarifa_hora_text");
+      if (esMembresia) {
+        if (totalEl) totalEl.textContent = "$0 — Membresía";
+        if (tarifaEl) tarifaEl.textContent = "Membresía";
+      }
+    }
+    </script>
+    <!-- /NUEVO -->
+
+  </form>
 
 </div>
 {% endblock %}

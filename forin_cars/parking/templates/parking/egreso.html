@@ -1,33 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Setup Cochera{% endblock %}
+{% block title %}Egreso{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <h2 class="fw-bold">Dar de baja </h2>
-  <p class="text-muted">Ingresa el ticket del movimiento para liberar el espacio.</p>
+<div class="container px-3 px-md-0 pt-3" style="max-width: 520px;">
 
-  <form method="post" class="card p-4">
-    <div class="container py-4">
-      <h2>Egreso</h2>
+  <div class="mb-3">
+    <h1 class="fc-section-title" style="font-size:1.35rem;">Egreso de vehículo</h1>
+    <div class="fc-section-sub">Ingresá el ticket del movimiento para liberar el espacio.</div>
+  </div>
 
-      <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label">Ticket / Alias (obligatorio)</label>
-          <input name="ticket" class="form-control" placeholder="Ej: TKT-C0884038" required>
-        </div>
+  <form method="post">
+    {% csrf_token %}
 
-        <div class="d-flex gap-2">
-          <button class="btn btn-danger" type="submit">Egresar</button>
-          <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Volver</a>
-        </div>
-      </form>
+    <div class="fc-form-section">
+      <label class="fc-label">Ticket / Alias <span class="text-danger">*</span></label>
+      <input name="ticket" class="fc-input" placeholder="Ej: TKT-C0884038" required autofocus
+             value="{{ ticket_prefill|default:'' }}">
     </div>
 
-    <div class="mt-4 d-flex gap-2">
-      <button class="btn btn-primary" type="submit">Guardar configuración</button>
-      <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Volver</a>
-    </div>
+    <button class="fc-action-btn fc-action-btn--danger" type="submit">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Egresar
+    </button>
+
+    <a class="d-block text-center mt-3 text-decoration-none fc-section-sub" href="{% url 'dashboard' %}">Cancelar</a>
   </form>
+
 </div>
 {% endblock %}

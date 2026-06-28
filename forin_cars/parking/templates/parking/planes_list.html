@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Planes y Membresías — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h2 class="fc-section-title mb-0">Planes y Membresías</h2>
+      <div class="fc-section-sub">{{ cochera.nombre }}</div>
+    </div>
+    {% if can_manage_cochera %}
+      <a class="btn btn-sm" href="{% url 'parking:plan_new' cochera.id %}"
+         style="background:var(--fc-blue);color:#fff;border-radius:12px;">
+        <i class="fa-solid fa-plus me-1"></i> Nuevo plan
+      </a>
+    {% endif %}
+  </div>
+
+  {# ── Planes ── #}
+  <h5 class="fc-section-title mb-2">Planes disponibles</h5>
+  {% if planes %}
+    <div class="fc-card p-0 mb-4">
+      {% for plan in planes %}
+        <div class="fc-zone-row d-flex align-items-center gap-3 {% if not plan.activo %}opacity-50{% endif %}">
+          <div class="fc-icon-badge fc-icon-badge--purple">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fw-semibold">{{ plan.nombre }}</span>
+              <span class="fw-bold">${{ plan.precio_mensual }}/mes</span>
+            </div>
+            <div class="fc-section-sub">
+              {% if plan.lavados_incluidos %}{{ plan.lavados_incluidos }} lavados{% else %}Lavados ilimitados{% endif %}
+              {% if plan.descuento_pct %} · {{ plan.descuento_pct }}% dto{% endif %}
+              {% if not plan.activo %} · <span class="text-danger">Inactivo</span>{% endif %}
+            </div>
+            {% if plan.servicios.all %}
+              <div class="fc-section-sub">
+                Servicios: {% for s in plan.servicios.all %}{{ s.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          {% if can_manage_cochera %}
+            <a href="{% url 'parking:plan_edit' cochera.id plan.id %}" class="btn btn-sm btn-outline-secondary">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fc-card p-3 text-center fc-section-sub mb-4">Sin planes configurados.</div>
+  {% endif %}
+
+  {# ── Membresías activas ── #}
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h5 class="fc-section-title mb-0">Membresías activas</h5>
+    {% if can_operate %}
+      <a href="{% url 'parking:membresia_new' cochera.id %}" class="btn btn-sm btn-outline-primary">
+        <i class="fa-solid fa-plus me-1"></i> Asignar
+      </a>
+    {% endif %}
+  </div>
+
+  {% if membresias %}
+    <div class="fc-card p-0 mb-4">
+      {% for m in membresias %}
+        <div class="fc-zone-row d-flex align-items-center gap-3">
+          <div class="fc-icon-badge fc-icon-badge--green">
+            <i class="fa-solid fa-id-card"></i>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between">
+              <a href="{% url 'parking:cliente_detail' cochera.id m.cliente.id %}"
+                 class="fw-semibold text-decoration-none" style="color:var(--fc-text);">
+                {{ m.cliente.nombre_completo }}
+              </a>
+              <span class="badge bg-success">{{ m.get_estado_display }}</span>
+            </div>
+            <div class="fc-section-sub">
+              {{ m.plan.nombre }} · Vence: {{ m.fecha_vencimiento|date:"d/m/Y" }}
+              {% if m.lavados_restantes is not None %} · {{ m.lavados_restantes }} lavados restantes{% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fc-card p-3 text-center fc-section-sub mb-4">Sin membresías activas.</div>
+  {% endif %}
+
+  <div class="mt-2">
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="fa-solid fa-chevron-left me-1"></i> Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

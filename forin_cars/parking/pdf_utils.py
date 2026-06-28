@@ -39,7 +39,7 @@ def build_movimiento_pdf_bytes(movimiento, *, horas_previstas: int | None = None
         rightMargin=18 * mm,
         topMargin=16 * mm,
         bottomMargin=16 * mm,
-        title="Comprobante de Ingreso",
+        title="Forin cars - Comprobante de Ingreso",
     )
 
     styles = getSampleStyleSheet()

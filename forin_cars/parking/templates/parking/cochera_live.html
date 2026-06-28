@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Panel — {{ cochera.nombre }}{% endblock %}
+
+{% block hero %}
+<div class="fc-hero">
+  <div class="container px-3 px-md-0">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <a href="{% url 'dashboard' %}" class="fc-hero-date text-white-50 text-decoration-none">
+          <i class="fa-solid fa-chevron-left me-1"></i> Dashboard
+        </a>
+        <h1 class="fc-hero-title mt-1">{{ cochera.nombre }}</h1>
+        <div class="fc-hero-date">{{ cochera.direccion|default:"Sin dirección" }}</div>
+      </div>
+      <div class="text-end">
+        <div class="fw-bold fs-2 lh-1">{{ ocupados }}/{{ total }}</div>
+        <div class="fc-hero-date">espacios ocupados</div>
+      </div>
+    </div>
+
+    {# Mini barra de ocupación #}
+    <div class="fc-occ-bar-track mt-3">
+      {% widthratio ocupados total 100 as occ_pct %}
+      <div class="fc-occ-bar-fill" style="width:{{ occ_pct|default:0 }}%;"></div>
+    </div>
+
+    {# Badges hora vs membresía #}
+    <div class="d-flex gap-2 mt-3">
+      <span class="badge rounded-pill" style="background:rgba(59,130,246,.25);color:#93c5fd;">
+        <i class="fa-solid fa-clock me-1"></i>{{ por_hora_count }} por hora
+      </span>
+      <span class="badge rounded-pill" style="background:rgba(168,85,247,.25);color:#d8b4fe;">
+        <i class="fa-solid fa-star me-1"></i>{{ por_membresia_count }} membresía
+      </span>
+      <span class="badge rounded-pill" style="background:rgba(34,197,94,.25);color:#86efac;">
+        <i class="fa-solid fa-square-parking me-1"></i>{{ libres }} libres
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3">
+
+  {# ── Acciones rápidas ── #}
+  <div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="{% url 'parking:ingreso_cochera' cochera.id %}"
+       class="btn btn-sm" style="background:rgba(34,197,94,.12);color:var(--fc-green);border-radius:10px;">
+      <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>Ingreso
+    </a>
+    <a href="{% url 'parking:egreso_cochera' cochera.id %}"
+       class="btn btn-sm" style="background:rgba(239,68,68,.12);color:var(--fc-red);border-radius:10px;">
+      <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>Egreso
+    </a>
+    <a href="{% url 'parking:orden_new' cochera.id %}"
+       class="btn btn-sm" style="background:rgba(59,130,246,.12);color:var(--fc-blue);border-radius:10px;">
+      <i class="fa-solid fa-clipboard-list me-1"></i>Nueva OT
+    </a>
+    <a href="{% url 'parking:clientes_list' cochera.id %}"
+       class="btn btn-sm" style="background:var(--fc-border);color:var(--fc-text);border-radius:10px;">
+      <i class="fa-solid fa-users me-1"></i>Clientes
+    </a>
+  </div>
+
+  {# ══════════════════════════════════════════════
+     GRID DE ESPACIOS
+  ══════════════════════════════════════════════ #}
+  <h2 class="fc-section-title mb-3">Mapa de espacios</h2>
+
+  {% regroup espacios_info by espacio.tipo.nombre as grupos_tipo %}
+  {% for grupo in grupos_tipo %}
+    <div class="mb-4">
+      <div class="fc-section-sub mb-2 fw-semibold text-uppercase" style="letter-spacing:.05em;">
+        {{ grupo.grouper }}
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% for info in grupo.list %}
+          {% with esp=info.espacio mov=info.mov %}
+          <div class="fc-space-cell {% if mov %}fc-space-cell--ocupado{% else %}fc-space-cell--libre{% endif %}"
+               {% if mov %}data-bs-toggle="tooltip"
+               title="{{ mov.vehiculo.patente|default:mov.vehiculo.patente_ult3|default:'?' }} · {{ info.horas }}h · {% if mov.tipo_pago == 'MEMBRESIA' %}Membresía{% else %}${{ info.monto }}{% endif %}"{% endif %}>
+            <div class="fc-space-label">{{ esp.etiqueta|default:esp.id }}</div>
+            {% if mov %}
+              <div class="fc-space-badge">
+                {% if mov.tipo_pago == "MEMBRESIA" %}
+                  <i class="fa-solid fa-star" style="font-size:.6rem;"></i>
+                {% else %}
+                  <i class="fa-solid fa-clock" style="font-size:.6rem;"></i>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="fc-card p-4 text-center fc-section-sub mb-4">
+      No hay espacios registrados. <a href="{% url 'parking:cochera_edit' cochera.id %}">Configurar cochera</a>
+    </div>
+  {% endfor %}
+
+  {# ══════════════════════════════════════════════
+     VEHÍCULOS ADENTRO
+  ══════════════════════════════════════════════ #}
+  {% with activos=espacios_info|dictsort:"mov" %}
+  <h2 class="fc-section-title mb-3">Vehículos adentro</h2>
+  <div class="fc-card p-0 mb-4">
+    {% for info in espacios_info %}
+      {% if info.mov %}
+        {% with mov=info.mov v=info.mov.vehiculo %}
+        <div class="fc-zone-row px-3 d-flex align-items-center gap-3">
+          {# Badge tipo de pago #}
+          <div class="fc-icon-badge fc-icon-badge--{% if mov.tipo_pago == 'MEMBRESIA' %}purple{% else %}blue{% endif %} flex-shrink-0">
+            <i class="fa-solid fa-{% if mov.tipo_pago == 'MEMBRESIA' %}star{% else %}clock{% endif %}"></i>
+          </div>
+
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+              <span class="fw-bold" style="color:var(--fc-text);">
+                {{ v.patente|default:v.patente_ult3|default:"SIN PAT" }}
+              </span>
+              <span class="badge rounded-pill {% if mov.tipo_pago == 'MEMBRESIA' %}bg-purple{% else %}bg-primary{% endif %}"
+                    style="{% if mov.tipo_pago == 'MEMBRESIA' %}background:rgba(168,85,247,.15);color:var(--fc-purple);{% endif %}font-size:.7rem;">
+                {% if mov.tipo_pago == "MEMBRESIA" %}
+                  <i class="fa-solid fa-star me-1"></i>{{ mov.membresia.plan.nombre|default:"Membresía" }}
+                {% else %}
+                  <i class="fa-solid fa-clock me-1"></i>Por hora · ${{ info.monto }}
+                {% endif %}
+              </span>
+            </div>
+            <div class="fc-section-sub">
+              {{ v.cliente.nombre_completo }} ·
+              Esp. {{ info.espacio.etiqueta|default:info.espacio.id }} ·
+              {{ info.horas }}h desde {{ mov.ingreso_at|date:"H:i" }}
+              {% if mov.egreso_estimado_at %}
+                · Est. salida {{ mov.egreso_estimado_at|date:"H:i" }}
+              {% endif %}
+            </div>
+          </div>
+
+          <a href="{% url 'parking:egreso_cochera' cochera.id %}?ticket={{ v.ticket }}"
+             class="btn btn-sm btn-outline-danger flex-shrink-0">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </a>
+        </div>
+        {% endwith %}
+      {% endif %}
+    {% empty %}
+    {% endfor %}
+
+    {# Si no hay ninguno activo #}
+    {% with cnt=por_hora_count|add:por_membresia_count %}
+      {% if cnt == 0 %}
+        <div class="text-center fc-section-sub py-4">
+          <i class="fa-solid fa-square-parking me-2" style="font-size:1.5rem;opacity:.3;"></i><br>
+          Sin vehículos adentro ahora.
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+  {% endwith %}
+
+  {# ══════════════════════════════════════════════
+     MEMBRESÍAS ACTIVAS
+  ══════════════════════════════════════════════ #}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="fc-section-title">Membresías activas</h2>
+    <a href="{% url 'parking:planes_list' cochera.id %}"
+       class="btn btn-sm btn-outline-primary">Ver planes</a>
+  </div>
+
+  <div class="fc-card p-0 mb-4">
+    {% for m in membresias_activas %}
+      <div class="fc-zone-row px-3 d-flex align-items-center gap-3">
+        <div class="fc-icon-badge fc-icon-badge--purple flex-shrink-0">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <a href="{% url 'parking:cliente_detail' cochera.id m.cliente.id %}"
+               class="fw-bold text-decoration-none" style="color:var(--fc-text);">
+              {{ m.cliente.nombre_completo }}
+            </a>
+            <span class="fc-section-sub text-nowrap">
+              vence {{ m.fecha_vencimiento|date:"d/m/Y" }}
+            </span>
+          </div>
+          <div class="fc-section-sub">
+            {{ m.plan.nombre }} ·
+            {% if m.plan.lavados_incluidos == 0 %}
+              Lavados ilimitados
+            {% else %}
+              {{ m.lavados_usados }}/{{ m.plan.lavados_incluidos }} lavados usados
+            {% endif %}
+            · ${{ m.plan.precio_mensual }}/mes
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center fc-section-sub py-4">Sin membresías activas.</div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Tooltips Bootstrap en los espacios ocupados
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el, { trigger: "hover click" });
+  });
+</script>
+{% endblock %}

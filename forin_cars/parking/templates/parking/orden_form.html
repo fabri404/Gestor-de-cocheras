@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Nueva Orden de Trabajo — {{ cochera.nombre }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .srv-card { border: 2px solid var(--fc-border); border-radius: 12px; padding: .75rem 1rem; cursor: pointer; transition: .15s; }
+  .srv-card:hover { border-color: var(--fc-blue); }
+  .srv-card.selected { border-color: var(--fc-blue); background: rgba(99,102,241,.08); }
+  .srv-card .check { display:none; }
+  .srv-card.selected .check { display:inline-flex; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3" style="max-width:640px;">
+
+  <div class="mb-3">
+    <a href="{% url 'parking:ordenes_list' cochera.id %}" class="btn btn-sm btn-outline-secondary mb-2">
+      <i class="fa-solid fa-chevron-left me-1"></i> Órdenes
+    </a>
+    <h2 class="fc-section-title mb-0">Nueva Orden de Trabajo</h2>
+    <div class="fc-section-sub">{{ cochera.nombre }}</div>
+  </div>
+
+  <form method="post" id="orden-form">
+    {% csrf_token %}
+
+    {# ── Vehículo ── #}
+    <div class="fc-card p-3 mb-3">
+      <h5 class="fw-semibold mb-3"><i class="fa-solid fa-car me-2"></i>Vehículo</h5>
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label">Patente *</label>
+          <input type="text" name="vehiculo_patente" class="form-control text-uppercase" required
+                 placeholder="ABC123" maxlength="10" id="id_vehiculo_patente">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Tipo</label>
+          {{ form.vehiculo_tipo }}
+        </div>
+        <div class="col-6">
+          <label class="form-label">Marca</label>
+          <input type="text" name="vehiculo_marca" class="form-control" placeholder="Toyota">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Modelo</label>
+          <input type="text" name="vehiculo_modelo" class="form-control" placeholder="Hilux">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Año</label>
+          <input type="number" name="vehiculo_anio" class="form-control" placeholder="2020" min="1900" max="2100">
+        </div>
+        <div class="col-8">
+          <label class="form-label">Color</label>
+          <input type="text" name="vehiculo_color" class="form-control" placeholder="Blanco">
+        </div>
+      </div>
+      <div id="vehiculo-info" class="mt-2 p-2 rounded small" style="background:rgba(99,102,241,.06);display:none;">
+        <i class="fa-solid fa-circle-check text-success me-1"></i>
+        Vehículo existente — datos precargados.
+      </div>
+    </div>
+
+    {# ── Cliente ── #}
+    <div class="fc-card p-3 mb-3">
+      <h5 class="fw-semibold mb-3"><i class="fa-solid fa-user me-2"></i>Cliente</h5>
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="cliente_nombre" class="form-control" placeholder="Juan">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Apellido</label>
+          <input type="text" name="cliente_apellido" class="form-control" placeholder="García">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="cliente_telefono" class="form-control" placeholder="11 1234-5678">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Email</label>
+          <input type="email" name="cliente_email" class="form-control" placeholder="juan@mail.com">
+        </div>
+      </div>
+      <div class="form-text">Si la patente ya está registrada, se usará el cliente vinculado.</div>
+    </div>
+
+    {# ── Servicios ── #}
+    <div class="fc-card p-3 mb-3">
+      <h5 class="fw-semibold mb-3"><i class="fa-solid fa-spray-can-sparkles me-2"></i>Servicios</h5>
+      <div id="total-display" class="mb-3 p-2 rounded fw-bold text-center"
+           style="background:rgba(34,197,94,.1);color:var(--fc-green);font-size:1.2rem;">
+        Total: $<span id="total-val">0</span>
+      </div>
+
+      {% regroup servicios by get_categoria_display as grupos %}
+      {% for grupo in grupos %}
+        <p class="small fw-semibold text-uppercase mb-1" style="color:var(--fc-text-muted);">{{ grupo.grouper }}</p>
+        <div class="d-flex flex-column gap-2 mb-3">
+          {% for srv in grupo.list %}
+            <div class="srv-card d-flex align-items-center justify-content-between"
+                 onclick="toggleServicio(this, {{ srv.id }}, {{ srv.precio }})">
+              <div>
+                <div class="fw-semibold">{{ srv.nombre }}</div>
+                <div class="fc-section-sub">{{ srv.duracion_minutos }} min{% if srv.descripcion %} · {{ srv.descripcion|truncatechars:50 }}{% endif %}</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold">${{ srv.precio }}</span>
+                <div class="check fc-icon-badge fc-icon-badge--green" style="width:24px;height:24px;font-size:.7rem;">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+              </div>
+              <input type="checkbox" name="servicios" value="{{ srv.id }}" class="d-none srv-input" id="srv-{{ srv.id }}">
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {# ── Detalles ── #}
+    <div class="fc-card p-3 mb-4">
+      <h5 class="fw-semibold mb-3"><i class="fa-solid fa-note-sticky me-2"></i>Detalles</h5>
+      <div class="mb-3">
+        <label class="form-label">Entrega estimada</label>
+        <input type="datetime-local" name="entrega_estimada_at" class="form-control">
+      </div>
+      <div>
+        <label class="form-label">Observaciones</label>
+        <textarea name="observaciones" class="form-control" rows="2"
+                  placeholder="Ej: rayón lado conductor, cliente pide producto sin aroma..."></textarea>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+      <button type="submit" class="btn btn-primary flex-grow-1">
+        <i class="fa-solid fa-clipboard-check me-1"></i> Crear Orden de Trabajo
+      </button>
+      <a href="{% url 'parking:ordenes_list' cochera.id %}" class="btn btn-outline-secondary">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const precios = {};
+let total = 0;
+
+function toggleServicio(card, id, precio) {
+  const input = document.getElementById('srv-' + id);
+  card.classList.toggle('selected');
+  input.checked = card.classList.contains('selected');
+  if (card.classList.contains('selected')) {
+    total += precio;
+    precios[id] = precio;
+  } else {
+    total -= precios[id] || 0;
+    delete precios[id];
+  }
+  document.getElementById('total-val').textContent = total.toFixed(2);
+}
+
+// Precargar datos de vehículo por patente
+document.getElementById('id_vehiculo_patente').addEventListener('blur', function() {
+  const patente = this.value.trim().toUpperCase();
+  if (!patente) return;
+  fetch('/api/vehiculo/?patente=' + encodeURIComponent(patente))
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      document.getElementById('vehiculo-info').style.display = 'block';
+    })
+    .catch(() => {});
+});
+</script>
+{% endblock %}

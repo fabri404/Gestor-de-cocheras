@@ -1,0 +1,61 @@
+services:
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # ─── Django + gunicorn + whitenoise ──────────────────────────────────────────
+  web:
+    build:
+      context: ./forin_cars
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:                 "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}"
+      DJANGO_SECRET_KEY:            "${DJANGO_SECRET_KEY}"
+      DJANGO_DEBUG:                 "${DJANGO_DEBUG:-0}"
+      DJANGO_ALLOWED_HOSTS:         "${DJANGO_ALLOWED_HOSTS:-localhost}"
+      DJANGO_CSRF_TRUSTED_ORIGINS:  "${DJANGO_CSRF_TRUSTED_ORIGINS:-}"
+      DJANGO_SUPERUSER_EMAIL:       "${DJANGO_SUPERUSER_EMAIL:-admin@parking.local}"
+      DJANGO_SUPERUSER_USERNAME:    "${DJANGO_SUPERUSER_USERNAME:-admin}"
+      DJANGO_SUPERUSER_PASSWORD:    "${DJANGO_SUPERUSER_PASSWORD:-}"
+      BUSINESS_NAME:                "${BUSINESS_NAME:-Forin Cars}"
+      BUSINESS_TIMEZONE:            "${BUSINESS_TIMEZONE:-America/Argentina/Buenos_Aires}"
+      GUNICORN_WORKERS:             "${GUNICORN_WORKERS:-2}"
+    ports:
+      - "${APP_PORT:-8080}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+volumes:
+  postgres_data:
+    driver: local

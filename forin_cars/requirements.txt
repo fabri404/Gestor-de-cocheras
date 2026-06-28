@@ -1,0 +1,22 @@
+# ─── Core Django ─────────────────────────────────────────────────────────────
+Django==6.0.6
+asgiref==3.11.1
+sqlparse==0.5.5
+
+# ─── Base de datos ────────────────────────────────────────────────────────────
+psycopg2-binary==2.9.11      # driver Postgres; reemplazar por psycopg[binary] al migrar a psycopg3
+dj-database-url==3.1.2       # parsea DATABASE_URL desde env var
+
+# ─── Servidor producción ──────────────────────────────────────────────────────
+gunicorn==26.0.0              # WSGI server
+whitenoise==6.12.0            # sirve static files sin nginx (modo SaaS simple)
+
+# ─── Generación de documentos ────────────────────────────────────────────────
+reportlab==4.4.9              # generación de PDFs (tickets de cochera)
+qrcode[pil]==8.2              # generación de QR
+pillow==12.1.1                # dependencia de qrcode y reportlab
+
+# ─── Extras Django ────────────────────────────────────────────────────────────
+django-extensions==4.1        # shell_plus, runserver_plus, etc.
+charset-normalizer==3.4.7     # charset normalizer (dep transitiva)
+packaging==26.2               # dep transitiva de gunicorn

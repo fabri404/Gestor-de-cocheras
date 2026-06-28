@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}{{ orden.numero }} — {{ cochera.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container px-3 px-md-0 pt-3" style="max-width:640px;">
+
+  <a href="{% url 'parking:ordenes_list' cochera.id %}" class="btn btn-sm btn-outline-secondary mb-3">
+    <i class="fa-solid fa-chevron-left me-1"></i> Órdenes
+  </a>
+
+  {# ── Header ── #}
+  <div class="fc-card p-3 mb-3">
+    <div class="d-flex align-items-start justify-content-between">
+      <div>
+        <h2 class="fc-section-title mb-1">{{ orden.numero }}</h2>
+        <div class="fc-section-sub">{{ cochera.nombre }} · {{ orden.created_at|date:"d/m/Y H:i" }}</div>
+      </div>
+      <span class="badge rounded-pill
+        {% if orden.estado == 'FINALIZADO' %}bg-success
+        {% elif orden.estado == 'EN_PROCESO' %}bg-primary
+        {% elif orden.estado == 'CANCELADO' %}bg-danger
+        {% else %}bg-secondary{% endif %} fs-6">
+        {{ orden.get_estado_display }}
+      </span>
+    </div>
+  </div>
+
+  {# ── Cambiar estado ── #}
+  {% if orden.estado != 'FINALIZADO' and orden.estado != 'CANCELADO' %}
+    <div class="fc-card p-3 mb-3">
+      <h5 class="fw-semibold mb-2">Actualizar estado</h5>
+      <form method="post" action="{% url 'parking:orden_estado' cochera.id orden.id %}">
+        {% csrf_token %}
+        <div class="d-flex gap-2 flex-wrap">
+          {% if orden.estado == 'PENDIENTE' %}
+            <button name="estado" value="EN_PROCESO" class="btn btn-primary">
+              <i class="fa-solid fa-play me-1"></i> Iniciar trabajo
+            </button>
+          {% endif %}
+          {% if orden.estado == 'EN_PROCESO' %}
+            <button name="estado" value="FINALIZADO" class="btn btn-success">
+              <i class="fa-solid fa-check me-1"></i> Finalizar y entregar
+            </button>
+          {% endif %}
+          <button name="estado" value="CANCELADO" class="btn btn-outline-danger"
+                  onclick="return confirm('¿Cancelar esta orden?')">
+            <i class="fa-solid fa-xmark me-1"></i> Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+  {# ── Vehículo + Cliente ── #}
+  <div class="row g-3 mb-3">
+    <div class="col-6">
+      <div class="fc-card p-3 h-100">
+        <div class="fc-section-sub mb-1">Vehículo</div>
+        <div class="fw-bold">{{ orden.vehiculo.patente|default:orden.vehiculo.patente_ult3|default:"—" }}</div>
+        <div class="fc-section-sub">
+          {% if orden.vehiculo.marca %}{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}<br>{% endif %}
+          {% if orden.vehiculo.color %}{{ orden.vehiculo.color }}{% if orden.vehiculo.anio %} · {{ orden.vehiculo.anio }}{% endif %}<br>{% endif %}
+          {{ orden.vehiculo.tipo.nombre }}
+        </div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="fc-card p-3 h-100">
+        <div class="fc-section-sub mb-1">Cliente</div>
+        <a href="{% url 'parking:cliente_detail' cochera.id orden.cliente.id %}"
+           class="fw-bold text-decoration-none" style="color:var(--fc-text);">
+          {{ orden.cliente.nombre_completo }}
+        </a>
+        <div class="fc-section-sub">
+          {% if orden.cliente.telefono %}{{ orden.cliente.telefono }}<br>{% endif %}
+          {% if orden.cliente.email %}{{ orden.cliente.email }}{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Servicios ── #}
+  <div class="fc-card p-3 mb-3">
+    <h5 class="fw-semibold mb-3">Servicios</h5>
+    {% for os in servicios_orden %}
+      <div class="d-flex justify-content-between align-items-center py-2
+                  {% if not forloop.last %}border-bottom{% endif %}"
+           style="border-color:var(--fc-border);">
+        <div>
+          <div class="fw-semibold">{{ os.servicio.nombre }}</div>
+          {% if os.observaciones %}
+            <div class="fc-section-sub">{{ os.observaciones }}</div>
+          {% endif %}
+        </div>
+        <span class="fw-bold">${{ os.precio_aplicado }}</span>
+      </div>
+    {% empty %}
+      <div class="fc-section-sub text-center">Sin servicios.</div>
+    {% endfor %}
+
+    <div class="d-flex justify-content-between align-items-center pt-3 mt-2"
+         style="border-top: 2px solid var(--fc-border);">
+      <span class="fw-bold">Total</span>
+      <span class="fw-bold fs-5">${{ orden.monto_total }}</span>
+    </div>
+  </div>
+
+  {# ── Observaciones ── #}
+  {% if orden.observaciones %}
+    <div class="fc-card p-3 mb-3">
+      <h5 class="fw-semibold mb-2">Observaciones</h5>
+      <div class="fc-section-sub">{{ orden.observaciones }}</div>
+    </div>
+  {% endif %}
+
+  {# ── Tiempos ── #}
+  <div class="fc-card p-3 mb-3">
+    <h5 class="fw-semibold mb-2">Tiempos</h5>
+    <div class="row g-2">
+      <div class="col-4 text-center">
+        <div class="fc-section-sub">Ingreso</div>
+        <div class="fw-semibold">{{ orden.created_at|date:"d/m H:i" }}</div>
+      </div>
+      <div class="col-4 text-center">
+        <div class="fc-section-sub">Entrega est.</div>
+        <div class="fw-semibold">{{ orden.entrega_estimada_at|date:"d/m H:i"|default:"—" }}</div>
+      </div>
+      <div class="col-4 text-center">
+        <div class="fc-section-sub">Entregado</div>
+        <div class="fw-semibold">{{ orden.entregado_at|date:"d/m H:i"|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fc-section-sub text-center mb-4">
+    Operador: {{ orden.operador.get_full_name|default:orden.operador.username }}
+  </div>
+
+  {# ── Checklist ── #}
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h5 class="fc-section-title mb-0">Checklist de calidad</h5>
+    <a href="{% url 'parking:orden_checklist' cochera.id orden.id %}"
+       class="btn btn-sm btn-outline-primary">
+      <i class="fa-solid fa-clipboard-check me-1"></i> Completar
+    </a>
+  </div>
+  <div class="fc-card p-3 mb-3">
+    {% with checklist=orden.checklist.all %}
+      {% if checklist %}
+        {% for oc in checklist %}
+          <div class="d-flex align-items-center gap-2 py-1 {% if not forloop.last %}border-bottom{% endif %}"
+               style="border-color:var(--fc-border);">
+            <i class="fa-solid fa-{% if oc.completado %}check-circle text-success{% else %}circle text-muted{% endif %}"></i>
+            <span class="{% if oc.completado %}text-decoration-line-through fc-section-sub{% endif %}">
+              {{ oc.item.descripcion }}
+            </span>
+          </div>
+        {% endfor %}
+        {% with total=checklist.count completados=checklist|dictsortreversed:"completado" %}
+          <div class="fc-section-sub mt-2 text-end">
+            {{ checklist.filter.completado }} de {{ total }} completados
+          </div>
+        {% endwith %}
+      {% else %}
+        <div class="fc-section-sub text-center">
+          Sin checklist configurado.
+          {% if can_manage_cochera %}
+            <a href="{% url 'parking:checklist_config' cochera.id %}">Configurar items</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {# ── Fotos ── #}
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h5 class="fc-section-title mb-0">Fotos antes/después</h5>
+  </div>
+
+  {# Upload form #}
+  <div class="fc-card p-3 mb-3">
+    <form method="post" enctype="multipart/form-data"
+          action="{% url 'parking:orden_foto_upload' cochera.id orden.id %}">
+      {% csrf_token %}
+      <div class="row g-2 align-items-end">
+        <div class="col-4">
+          <label class="form-label small">Tipo</label>
+          <select name="tipo" class="form-select form-select-sm">
+            <option value="ANTES">Antes</option>
+            <option value="DESPUES">Después</option>
+          </select>
+        </div>
+        <div class="col-5">
+          <label class="form-label small">Imagen</label>
+          <input type="file" name="imagen" accept="image/*" class="form-control form-control-sm" required>
+        </div>
+        <div class="col-3">
+          <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="fa-solid fa-upload"></i> Subir
+          </button>
+        </div>
+        <div class="col-12">
+          <input type="text" name="descripcion" class="form-control form-control-sm"
+                 placeholder="Descripción (opcional)">
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if orden.fotos.all %}
+    {% regroup orden.fotos.all by get_tipo_display as fotos_grupos %}
+    {% for grupo in fotos_grupos %}
+      <h6 class="fw-semibold mb-2" style="color:var(--fc-text-muted);">{{ grupo.grouper }}</h6>
+      <div class="row g-2 mb-3">
+        {% for foto in grupo.list %}
+          <div class="col-6 col-md-4">
+            <div class="position-relative">
+              <img src="{{ foto.imagen.url }}" alt="{{ foto.descripcion }}"
+                   class="img-fluid rounded" style="width:100%;height:140px;object-fit:cover;">
+              {% if foto.descripcion %}
+                <div class="position-absolute bottom-0 start-0 end-0 p-1 rounded-bottom"
+                     style="background:rgba(0,0,0,.55);color:#fff;font-size:.7rem;">
+                  {{ foto.descripcion }}
+                </div>
+              {% endif %}
+              <form method="post"
+                    action="{% url 'parking:orden_foto_delete' cochera.id orden.id foto.id %}"
+                    class="position-absolute top-0 end-0 p-1"
+                    onsubmit="return confirm('¿Eliminar foto?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm" style="width:28px;height:28px;padding:0;">
+                  <i class="fa-solid fa-xmark" style="font-size:.7rem;"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="fc-section-sub text-center mb-4">Sin fotos cargadas.</div>
+  {% endif %}
+
+</div>
+{% endblock %}
