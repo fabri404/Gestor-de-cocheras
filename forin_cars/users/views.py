@@ -9,9 +9,11 @@ from django.db.models import Q, Sum, Count, Avg, F
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from .forms import RegistroForm
 from parking.models import Cochera, Movimiento, OrdenTrabajo, OrdenServicio, Servicio, Producto
+from parking.services import apply_pending_invites
 
 
 def login_view(request):
@@ -40,8 +42,22 @@ def registro_view(request):
     if request.method == "POST":
         form = RegistroForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Usuario creado correctamente. Ahora iniciá sesión.")
+            user = form.save()
+            # Vincular invitaciones pendientes: si un dueño invitó este email,
+            # el usuario queda automáticamente en ADMIN_EMPLEADO y asignado a la cochera.
+            invites_aceptadas = apply_pending_invites(user)
+            if invites_aceptadas:
+                messages.success(
+                    request,
+                    f"Usuario creado y vinculado a {invites_aceptadas} cochera(s) como empleado. "
+                    "¡Ya podés iniciar sesión!",
+                )
+            else:
+                messages.success(
+                    request,
+                    "Usuario creado correctamente. Para operar una cochera, "
+                    "pedile al dueño que te invite por email. Ahora iniciá sesión.",
+                )
             return redirect("login")
     else:
         form = RegistroForm()
@@ -242,6 +258,7 @@ def dashboard_view(request):
     return render(request, "users/dashboard.html", ctx)
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     return redirect("login")

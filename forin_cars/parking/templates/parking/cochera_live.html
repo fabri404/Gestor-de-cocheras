@@ -63,9 +63,6 @@
     </a>
   </div>
 
-  {# ══════════════════════════════════════════════
-     GRID DE ESPACIOS
-  ══════════════════════════════════════════════ #}
   <h2 class="fc-section-title mb-3">Mapa de espacios</h2>
 
   {% regroup espacios_info by espacio.tipo.nombre as grupos_tipo %}
@@ -101,9 +98,6 @@
     </div>
   {% endfor %}
 
-  {# ══════════════════════════════════════════════
-     VEHÍCULOS ADENTRO
-  ══════════════════════════════════════════════ #}
   {% with activos=espacios_info|dictsort:"mov" %}
   <h2 class="fc-section-title mb-3">Vehículos adentro</h2>
   <div class="fc-card p-0 mb-4">
@@ -162,9 +156,6 @@
   </div>
   {% endwith %}
 
-  {# ══════════════════════════════════════════════
-     MEMBRESÍAS ACTIVAS
-  ══════════════════════════════════════════════ #}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="fc-section-title">Membresías activas</h2>
     <a href="{% url 'parking:planes_list' cochera.id %}"

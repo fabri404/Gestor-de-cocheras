@@ -105,6 +105,28 @@ El script instala Docker, clona el repo y guía el alta de la primera instancia.
 
 ---
 
+## Tests
+
+```bash
+# Con venv local (desarrollo)
+source venv/bin/activate
+cd forin_cars
+python manage.py test parking users --verbosity=2
+
+# Con Docker (en la instancia 1)
+make test INSTANCE=1
+```
+
+Suite de 53 tests que cubren: permisos por rol, flujo ingreso→egreso, cálculo Decimal con mínimo 1 hora, inventario (ENTRADA/SALIDA/AJUSTE), onboarding de empleados invitados, y smoke tests de todas las vistas principales (sin 500, sin NameError, sin NoReverseMatch).
+
+---
+
+## Documentación
+
+- **Manual de uso:** [`docs/manual.md`](docs/manual.md) — guía por rol para operadores, dueños y superadmin.
+
+---
+
 ## Comandos Makefile
 
 ```bash

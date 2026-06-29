@@ -7,6 +7,7 @@ import json
 import qrcode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from django.core.exceptions import FieldError
 from django.core.signing import BadSignature, Signer
 from django.db import models, transaction
@@ -36,7 +37,10 @@ from .forms import (
 )
 from .models import (
     Cochera,
+    CocheraEmpleado,
     Cliente,
+    Espacio,
+    Movimiento,
     Vehiculo,
     TipoEspacio,
     TarifaHora,
@@ -235,7 +239,7 @@ def ingreso_public_view(request, cochera_id: int):
         try:
             tipo = TipoEspacio.objects.get(id=tipo_id)
 
-            ingresar_vehiculo(
+            mov = ingresar_vehiculo(
                 cochera=cochera,
                 operador=cochera.owner,  # no hay login, guardamos como operador el dueño
                 tipo=tipo,
@@ -249,13 +253,12 @@ def ingreso_public_view(request, cochera_id: int):
                 },
             )
 
-            messages.success(request, "Ingreso cargado correctamente. ¡Gracias!")
-            # redirigimos al mismo form manteniendo el token
-            return redirect(
-                reverse("parking:ingreso_public", kwargs={"cochera_id": cochera.id})
-                + "?"
-                + urlencode({"t": token})
-            )
+            # Mostrar confirmación con el ticket asignado
+            return render(request, "parking/ingreso_public_ok.html", {
+                "ticket": mov.vehiculo.ticket,
+                "cochera": cochera,
+                "public_token": token,
+            })
 
         except ValueError as e:
             messages.error(request, str(e))
@@ -310,7 +313,8 @@ def _cochera_upsert_view(request, *, title: str, cochera=None):
                 regenerar_espacios(cochera)
             except ValueError as e:
                 messages.error(request, str(e))
-                return redirect("cochera_edit" if is_edit else "cochera_new", cochera_id=getattr(cochera, "id", None))
+                # La cochera ya fue guardada en ambos paths → siempre redirigir a editar
+                return redirect("parking:cochera_edit", cochera_id=cochera.id)
 
             upsert_tarifas(cochera, tipos, tarifa_form.cleaned_data)
 
@@ -470,13 +474,13 @@ def _select_cochera_view(request, *, title: str, target_url_name: str):
 @login_required
 @user_passes_test(can_operate)
 def ingreso_select_cochera_view(request):
-    return _select_cochera_view(request, title="Elegí cochera para INGRESO", target_url_name="ingreso_cochera")
+    return _select_cochera_view(request, title="Elegí cochera para INGRESO", target_url_name="parking:ingreso_cochera")
 
 
 @login_required
 @user_passes_test(can_operate)
 def egreso_select_cochera_view(request):
-    return _select_cochera_view(request, title="Elegí cochera para EGRESO", target_url_name="egreso_cochera")
+    return _select_cochera_view(request, title="Elegí cochera para EGRESO", target_url_name="parking:egreso_cochera")
 
 
 # =========================
@@ -632,6 +636,7 @@ def servicio_form_view(request, cochera_id: int, servicio_id: int = None):
     })
 
 
+@require_POST
 @login_required
 @user_passes_test(is_admin_dueno)
 def servicio_toggle(request, cochera_id: int, servicio_id: int):
@@ -842,12 +847,10 @@ def _crear_orden_trabajo(*, cochera, operador, form_data, servicios_ids):
         entrega_estimada_at=form_data.get("entrega_estimada_at"),
     )
 
-    total = 0
     for srv in servicios:
         OrdenServicio.objects.create(orden=orden, servicio=srv, precio_aplicado=srv.precio)
-        total += srv.precio
-    orden.monto_total = total
-    orden.save(update_fields=["monto_total"])
+    # Calcular total mediante el método oficial del modelo (evita duplicación)
+    orden.recalcular_total()
 
     # Auto-poblar checklist con los items activos de la cochera
     items = ChecklistItem.objects.filter(cochera=cochera, activo=True)

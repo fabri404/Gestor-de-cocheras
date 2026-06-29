@@ -22,6 +22,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home),
     path("", include("users.urls")),
-    path("", include("qrform.urls")),
+    # qrform app desconectada: sus templates no existen; el QR de parking ya
+    # cubre el flujo de ingreso público (parking:cochera_qr / parking:ingreso_public).
+    # path("", include("qrform.urls")),
     path("parking/", include(("parking.urls", "parking"), namespace="parking")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

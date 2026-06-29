@@ -1,18 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Ingreso registrado{% endblock %}
+{% block title %}Ingreso registrado — {{ cochera.nombre }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h3 class="mb-2">✅ Ingreso registrado</h3>
-      <p class="mb-3">
-        Tu ticket es: <strong>{{ ticket }}</strong>
-      </p>
-      <p class="text-muted mb-0">
-        Guardalo para el egreso.
-      </p>
+<div class="container py-5" style="max-width:480px;">
+  <div class="fc-card p-4 text-center">
+    <div class="mb-3" style="font-size:3rem;">✅</div>
+    <h2 class="fc-section-title mb-1">¡Ingreso registrado!</h2>
+    <p class="fc-section-sub mb-4">{{ cochera.nombre }}</p>
+
+    <div class="p-3 mb-4 rounded" style="background:var(--fc-surface-2);font-size:1.5rem;letter-spacing:.1em;font-weight:700;">
+      {{ ticket }}
     </div>
+
+    <p class="fc-section-sub mb-4">
+      Guardá este número de ticket para presentarlo al salir.
+    </p>
+
+    {% if public_token %}
+      <a href="{% url 'parking:ingreso_public' cochera.id %}?t={{ public_token }}"
+         class="fc-action-btn fc-action-btn--primary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Registrar otro vehículo
+      </a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

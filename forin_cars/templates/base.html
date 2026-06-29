@@ -26,6 +26,7 @@
       </button>
 
       <div class="collapse navbar-collapse" id="nav">
+        {% with cochera_id=request.resolver_match.kwargs.cochera_id %}
         <ul class="navbar-nav ms-auto gap-2 align-items-lg-center">
           <li class="nav-item">
             <span class="badge text-bg-secondary">
@@ -41,15 +42,40 @@
             <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
           </li>
 
+          {# Cuando estamos dentro de una cochera: accesos rápidos operativos #}
+          {% if cochera_id and can_operate %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'parking:cochera_live' cochera_id %}"
+                 title="Panel en vivo"><i class="fa-solid fa-tower-broadcast me-1"></i>Panel</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'parking:ingreso_cochera' cochera_id %}"
+                 title="Registrar ingreso"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i>Ingreso</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'parking:egreso_cochera' cochera_id %}"
+                 title="Registrar egreso"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i>Egreso</a>
+            </li>
+          {% elif can_operate %}
+            {# Sin cochera en contexto: acceso al selector de cochera #}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'parking:ingreso' %}">
+                <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>Operar
+              </a>
+            </li>
+          {% endif %}
+
           {% if can_manage_cochera %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'parking:cochera_new' %}">+ Crear cochera</a>
+              <a class="nav-link" href="{% url 'parking:cochera_new' %}">+ Cochera</a>
             </li>
           {% endif %}
 
           {% if request.user.is_superuser %}
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
+              <a class="nav-link" href="{% url 'admin:index' %}">
+                <i class="fa-solid fa-screwdriver-wrench me-1"></i>Admin
+              </a>
             </li>
           {% endif %}
 
@@ -61,9 +87,13 @@
           </li>
 
           <li class="nav-item">
-            <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Cerrar sesión</a>
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
+            </form>
           </li>
         </ul>
+        {% endwith %}
       </div>
     </div>
   </nav>
@@ -123,22 +153,32 @@
         <span>Clientes</span>
       </a>
     {% else %}
-      <a class="fc-bottom-nav-item {% if 'ordenes' in active|default:'' %}active{% endif %}" href="{% url 'parking:ingreso' %}">
-        <i class="fa-solid fa-clipboard-list"></i>
-        <span>Operar</span>
-      </a>
-      <a class="fc-bottom-nav-item" href="{% if can_manage_cochera %}{% url 'parking:cochera_new' %}{% else %}#{% endif %}">
-        <i class="fa-solid fa-warehouse"></i>
-        <span>Local</span>
-      </a>
-      <a class="fc-bottom-nav-item" href="#">
-        <i class="fa-solid fa-spray-can-sparkles"></i>
-        <span>Servicios</span>
-      </a>
-      <a class="fc-bottom-nav-item" href="#">
-        <i class="fa-solid fa-users"></i>
-        <span>Clientes</span>
-      </a>
+      {% if can_operate %}
+        <a class="fc-bottom-nav-item {% if active == 'ingreso' or active == 'ingreso_cochera' %}active{% endif %}"
+           href="{% url 'parking:ingreso' %}">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span>Ingreso</span>
+        </a>
+        <a class="fc-bottom-nav-item {% if active == 'egreso' or active == 'egreso_cochera' %}active{% endif %}"
+           href="{% url 'parking:egreso' %}">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Egreso</span>
+        </a>
+      {% endif %}
+      {% if can_manage_cochera %}
+        <a class="fc-bottom-nav-item {% if active == 'cochera_new' %}active{% endif %}"
+           href="{% url 'parking:cochera_new' %}">
+          <i class="fa-solid fa-warehouse"></i>
+          <span>+ Local</span>
+        </a>
+      {% endif %}
+      <form method="post" action="{% url 'logout' %}" class="d-contents">
+        {% csrf_token %}
+        <button type="submit" class="fc-bottom-nav-item border-0 bg-transparent">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Salir</span>
+        </button>
+      </form>
     {% endif %}
   </nav>
   {% endwith %}

@@ -1,4 +1,5 @@
 import secrets
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
 from django.db import models
@@ -232,8 +233,12 @@ class Movimiento(models.Model):
 
     def monto_acumulado(self):
         if self.tipo_pago == self.MEMBRESIA:
-            return 0
-        return round(float(self.tarifa_hora_aplicada) * self.horas_transcurridas(), 2)
+            return Decimal("0.00")
+        horas = Decimal(str(self.horas_transcurridas()))
+        # Cobro mínimo: 1 hora (fracción de hora se redondea al bloque de 1h)
+        horas = max(horas, Decimal("1.00"))
+        monto = self.tarifa_hora_aplicada * horas
+        return monto.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 TipoVehiculo = TipoEspacio
@@ -497,9 +502,12 @@ class MovimientoInventario(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            if self.tipo == self.ENTRADA or self.tipo == self.AJUSTE:
+            if self.tipo == self.ENTRADA:
                 self.producto.stock_actual += self.cantidad
-            else:
+            elif self.tipo == self.AJUSTE:
+                # Ajuste absoluto: corrige el stock al valor de conteo físico
+                self.producto.stock_actual = self.cantidad
+            else:  # SALIDA
                 self.producto.stock_actual -= self.cantidad
             self.producto.save(update_fields=["stock_actual"])
         super().save(*args, **kwargs)
