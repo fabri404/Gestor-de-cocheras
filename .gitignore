@@ -28,6 +28,10 @@ backups/
 # ─── Dev override (contiene mounts locales, no commitear) ────────────────────
 docker-compose.override.yml
 
+# ─── Tooling local (Claude) ───────────────────────────────────────────────────
+.claude-flow/
+.claude/
+
 # ─── Editors / OS ─────────────────────────────────────────────────────────────
 .idea/
 .vscode/

@@ -1,6 +1,15 @@
 # Forin Cars — Gestor de Cocheras
 
-Sistema web para gestión operativa de una o múltiples cocheras: ingresos/egresos, tickets PDF con QR, tarifas por tipo de vehículo, empleados por cochera e invitaciones por email.
+Sistema web para gestión operativa de una o múltiples cocheras con lavadero integrado: ingresos/egresos, tickets PDF con QR, tarifas por tipo de vehículo, órdenes de trabajo de lavado, inventario, membresías, empleados por cochera e invitaciones por email.
+
+## Funcionalidades
+
+- **Parking**: cocheras con capacidad por tipo de espacio, tarifas por hora, ingreso/egreso con cálculo automático (mínimo 1 hora), panel en vivo de ocupación, tickets PDF con QR y QR público de ingreso por cochera.
+- **Lavadero (car wash)**: clientes y vehículos, servicios con precios, órdenes de trabajo con checklist y fotos, turnos.
+- **Inventario**: productos por categoría, movimientos ENTRADA/SALIDA/AJUSTE con stock actualizado.
+- **Membresías**: planes mensuales por cliente — el egreso de un vehículo con membresía activa se cobra $0.
+- **Usuarios y roles**: Superuser, dueño (`ADMIN_DUENO`) y empleado (`ADMIN_EMPLEADO`), con invitaciones de empleados por email y auto-vinculación al registrarse.
+- **UI**: Django templates + Bootstrap 5 con modo oscuro (preferencia guardada en el navegador).
 
 ---
 
@@ -196,8 +205,8 @@ Cada instancia = un proyecto Docker Compose separado con nombre `parking-N`.
 | Rol | Permisos |
 |---|---|
 | **Superuser** (superadmin) | Acceso total + Django admin |
-| **ADMIN_DUENO** | Crear/editar cocheras, configurar capacidad/tarifas, invitar empleados |
-| **ADMIN_EMPLEADO** | Registrar ingresos y egresos en cocheras asignadas |
+| **ADMIN_DUENO** | Crear/editar cocheras, configurar capacidad/tarifas, invitar empleados, gestionar servicios, inventario, planes y membresías |
+| **ADMIN_EMPLEADO** | Registrar ingresos/egresos y operar órdenes de lavado en cocheras asignadas |
 
 ---
 
@@ -222,7 +231,9 @@ Gestor de cocheras/
 │   │   ├── urls.py             ← rutas raíz + /health/
 │   │   └── context_processors.py
 │   ├── parking/                ← app principal
-│   │   ├── models.py           ← Cochera, Espacio, Movimiento, Tarifa...
+│   │   ├── models.py           ← Cochera, Espacio, Movimiento, Tarifa,
+│   │   │                          Cliente, Vehiculo, OrdenTrabajo, Turno,
+│   │   │                          Producto, MovimientoInventario, Plan, Membresia...
 │   │   ├── views.py
 │   │   ├── services.py         ← lógica de negocio
 │   │   ├── services_movimientos.py
